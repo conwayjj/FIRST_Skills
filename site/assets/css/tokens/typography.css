@@ -1,0 +1,42 @@
+/* ============================================================
+   That ONE Team — Typography tokens
+   Roboto (body) · Pirulen (display) · SquareFont (headings)
+   ============================================================ */
+:root {
+  /* ---- Families ---- */
+  --font-display: 'Pirulen', 'Orbitron', 'Chakra Petch', 'Arial Narrow', sans-serif;
+  --font-heading: 'SquareFont', 'Chakra Petch', system-ui, sans-serif;
+  --font-body:    'Roboto', system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  --font-mono:    ui-monospace, 'Roboto Mono', 'SFMono-Regular', Menlo, monospace;
+
+  /* ---- Weights ---- */
+  --fw-light:   300;
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-bold:    700;
+  --fw-black:   900;
+
+  /* ---- Type scale (rem, 16px base) ---- */
+  --fs-display: 4.5rem;   /* 72 — hero / banner headline */
+  --fs-h1:      3rem;     /* 48 */
+  --fs-h2:      2.25rem;  /* 36 */
+  --fs-h3:      1.75rem;  /* 28 */
+  --fs-h4:      1.375rem; /* 22 */
+  --fs-h5:      1.125rem; /* 18 — section eyebrows */
+  --fs-lg:      1.125rem; /* 18 */
+  --fs-body:    1rem;     /* 16 */
+  --fs-sm:      0.875rem; /* 14 */
+  --fs-xs:      0.75rem;  /* 12 */
+
+  /* ---- Line heights ---- */
+  --lh-tight:   1.05;
+  --lh-snug:    1.2;
+  --lh-normal:  1.5;
+  --lh-relaxed: 1.65;
+
+  /* ---- Letter spacing ---- */
+  --ls-display: 0.04em;
+  --ls-heading: 0.02em;
+  --ls-caps:    0.14em;
+  --ls-body:    0;
+}

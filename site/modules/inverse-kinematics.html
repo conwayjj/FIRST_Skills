@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inverse Kinematics — That ONE Team Training Hub</title>
+<meta name="description" content="Write a Java step(dt) solver to drive a prismatic + rotational arm to a target, with a real inertia-aware physics simulation.">
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/module.css">
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+      </div>
+    </div>
+  </div>
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="../index.html">
+        <img class="tot-header__logo-img" src="../assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../index.html#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../README.md">Build Guide</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tot-section tot-section--tight tot-section--surface">
+    <div class="tot-container">
+
+      <div class="tot-breadcrumb">
+        <a href="../index.html">Home</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <a href="../index.html#modules">Modules</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <span class="tot-breadcrumb__current">Inverse Kinematics</span>
+      </div>
+
+      <div class="tot-module-header">
+        <div class="tot-module-header__badges">
+          <span class="tot-badge tot-badge--soft">Kinematics</span>
+          <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
+        </div>
+        <h1 class="tot-module-header__title">Inverse Kinematics</h1>
+        <p class="tot-module-header__lead">
+          A vertical linear actuator (prismatic joint) topped with a 1–3 link rotational
+          chain. Click the workspace to place a target, then write a Java
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
+          solver to drive the end effector there. The simulation is inertia-aware —
+          torque limits, damping, and moment-of-inertia all push back on your solver
+          the way a real mechanism would.
+        </p>
+      </div>
+
+      <div class="tot-workbench">
+
+        <!-- WORKSPACE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Workspace</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--soft" id="sim-pill">Idle</span>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+            <div class="tot-sim-canvas-wrap">
+              <canvas id="arm-canvas" width="480" height="400" aria-label="Inverse kinematics workspace"></canvas>
+            </div>
+            <div class="tot-hint-text" id="target-hint">Click the workspace to place a target, then press Start</div>
+
+            <div class="tot-metrics-row">
+              <div class="tot-metric-card"><div class="tot-metric-label">End X</div><div class="tot-metric-value" id="m-ex">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">End Y</div><div class="tot-metric-value" id="m-ey">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Tgt X</div><div class="tot-metric-value" id="m-tx">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Tgt Y</div><div class="tot-metric-value" id="m-ty">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Error</div><div class="tot-metric-value" id="m-err">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Ext</div><div class="tot-metric-value" id="m-ext">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Frames</div><div class="tot-metric-value" id="m-frames">—</div></div>
+            </div>
+
+            <div class="tot-control-group">
+
+              <div class="tot-control-heading">Linear Actuator (Prismatic Joint)</div>
+              <div class="tot-accent-block">
+                <div class="tot-accent-block__title">↕ Vertical Extension <span class="tot-accent-block__tag">Prismatic J0</span></div>
+                <div class="tot-control-row">
+                  <span class="tot-control-label">Max extension</span>
+                  <input type="range" class="tot-range" min="50" max="300" step="10" value="180" id="lin-max">
+                  <span class="tot-control-value" id="lin-max-val">180 px</span>
+                </div>
+                <div class="tot-control-row">
+                  <span class="tot-control-label">Max speed</span>
+                  <input type="range" class="tot-range" min="10" max="300" step="10" value="80" id="lin-speed">
+                  <span class="tot-control-value" id="lin-speed-val">80 px/s</span>
+                </div>
+                <div class="tot-control-row">
+                  <span class="tot-control-label">Acceleration</span>
+                  <input type="range" class="tot-range" min="20" max="600" step="20" value="160" id="lin-accel">
+                  <span class="tot-control-value" id="lin-accel-val">160 px/s²</span>
+                </div>
+              </div>
+
+              <div class="tot-control-heading">Rotational Chain</div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Joints (R)</span>
+                <select class="tot-select" id="num-rot-joints">
+                  <option value="1">1 rotational</option>
+                  <option value="2" selected>2 rotational</option>
+                  <option value="3">3 rotational</option>
+                </select>
+              </div>
+              <div id="joint-controls"></div>
+
+              <div class="tot-control-heading">Rotational Physics</div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Max speed</span>
+                <input type="range" class="tot-range" min="10" max="360" step="10" value="120" id="max-speed">
+                <span class="tot-control-value" id="max-speed-val">120°/s</span>
+              </div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Torque limit</span>
+                <input type="range" class="tot-range" min="20" max="600" step="20" value="200" id="torque-limit">
+                <span class="tot-control-value" id="torque-val">200°/s²</span>
+              </div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Damping</span>
+                <input type="range" class="tot-range" min="0" max="0.99" step="0.01" value="0.85" id="damping">
+                <span class="tot-control-value" id="damping-val">0.85</span>
+              </div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Link density</span>
+                <input type="range" class="tot-range" min="0.1" max="5" step="0.1" value="1.0" id="density">
+                <span class="tot-control-value" id="density-val">1.0</span>
+              </div>
+
+              <div class="tot-control-heading">Live Velocities</div>
+              <div id="vel-bars"></div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- CODE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">IK Solver — Java</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--outline tot-badge--outline-on-dark">step(dt)</span>
+            </div>
+          </div>
+          <div class="tot-code-toolbar">
+            <button class="tot-btn tot-btn--sm tot-btn--primary" id="run-btn">Start ▸</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" id="stop-btn">Stop ◾◾</button>
+            <button class="tot-btn tot-btn--sm tot-btn--ghost" id="save-btn">Save</button>
+            <button class="tot-btn tot-btn--sm tot-btn--ghost" id="restore-btn" disabled>Restore</button>
+            <span class="tot-save-indicator" id="save-indicator">Ctrl+Enter to start</span>
+          </div>
+          <div class="tot-panel__body">
+            <textarea class="tot-code-editor" id="code-editor" spellcheck="false"></textarea>
+            <div class="tot-console" id="output-panel">
+              <div class="tot-console__line--info">// IK solver — step(dt) is called every animation frame.</div>
+              <div class="tot-console__line--info">// Prismatic joint: setExtension(px)  — target height in px (0..maxExtension)</div>
+              <div class="tot-console__line--info">// Rotational joints: setTargetAngle(i, deg)  — i = 0..numRotJoints-1</div>
+              <div class="tot-console__line--info">// Read state: getExtension(), getExtVelocity()</div>
+              <div class="tot-console__line--info">//             getAngle(i), getVelocity(i), getInertiaScale(i)</div>
+              <div class="tot-console__line--info">// Geometry: endX, endY, targetX, targetY, error, maxExtension</div>
+              <div class="tot-console__line--info">// Call stopSim() when converged.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Objective</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Get the end effector on target</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 0;">
+          Click anywhere in the workspace to set a target, then hit <strong>Start</strong> — the
+          default solver uses Cyclic Coordinate Descent (CCD), working from the outermost
+          joint inward, to aim the chain at the target each frame. Try changing the joint
+          count, link lengths, and physics settings on the left, then adjust (or replace)
+          the solver to match. The simulation enforces realistic torque and speed limits,
+          so a naive solver will overshoot or lag — that's the part worth solving for.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Reference</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">step(dt) API</h2>
+        </div>
+        <dl class="tot-reference-grid">
+          <dt>setExtension(px)</dt><dd>Command the prismatic joint's target height, 0..maxExtension.</dd>
+          <dt>getExtension()</dt><dd>Current extension in px.</dd>
+          <dt>getExtVelocity()</dt><dd>Current extension velocity in px/s.</dd>
+          <dt>setTargetAngle(i, deg)</dt><dd>Command rotational joint i's target world-space angle.</dd>
+          <dt>getAngle(i)</dt><dd>Current actual angle of rotational joint i.</dd>
+          <dt>getVelocity(i)</dt><dd>Current angular velocity of joint i, in °/s.</dd>
+          <dt>getInertiaScale(i)</dt><dd>Relative inertia of joint i — higher means more sluggish.</dd>
+          <dt>stopSim()</dt><dd>Call once converged to stop the simulation loop.</dd>
+          <dt>println(...)</dt><dd>Write a line to the console panel below the editor.</dd>
+          <dt>endX, endY</dt><dd>Current end-effector position.</dd>
+          <dt>targetX, targetY, error</dt><dd>Target position and current distance to it.</dd>
+          <dt>numRotJoints, lengths[]</dt><dd>Configured rotational joint count and link lengths.</dd>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="../assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="../index.html">Home</a>
+      <a class="tot-footer__link" href="../index.html#modules">Modules</a>
+      <a class="tot-footer__link" href="../README.md">Build Guide</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="../assets/js/nav.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────
+//  CONFIG
+// ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('arm-canvas');
+const ctx = canvas.getContext('2d');
+const outputPanel = document.getElementById('output-panel');
+const editor = document.getElementById('code-editor');
+
+const W = canvas.width, H = canvas.height;
+// Base origin is near the bottom-center
+const BASE_X = W / 2, BASE_Y = H - 40;
+
+let cfg = {
+  linMax: 180,       // max extension in px
+  linSpeed: 80,      // px/s
+  linAccel: 160,     // px/s²
+  numRot: 2,
+  rotLengths: [100, 80, 65],
+  maxSpeed: 120,     // deg/s
+  torqueLimit: 200,  // deg/s²
+  damping: 0.85,
+  density: 1.0
+};
+
+// ─────────────────────────────────────────────────────────────
+//  PHYSICS STATE
+// ─────────────────────────────────────────────────────────────
+let lin = { pos: 0, vel: 0, target: 0 };  // prismatic joint
+let joints = [];                            // rotational joints
+
+function initPhysics() {
+  lin = { pos: 0, vel: 0, target: 0 };
+  joints = [];
+  for (let i = 0; i < cfg.numRot; i++) {
+    joints.push({ angle: 0, vel: 0, targetAngle: 0, inertiaScale: 1 });
+  }
+  recomputeInertia();
+}
+
+// Inertia for each rotational joint stacks all distal link inertias;
+// the effect of the linear actuator's extension is applied in physicsStep.
+function recomputeInertia() {
+  const n = cfg.numRot;
+  const inertias = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    let totalI = 0, dist = 0;
+    for (let j = i; j < n; j++) {
+      const L = cfg.rotLengths[j];
+      const m = cfg.density * L;
+      totalI += m * (dist * dist + dist * L + (L * L) / 3);
+      dist += L;
+    }
+    inertias[i] = totalI;
+  }
+  const base = inertias[0] || 1;
+  for (let i = 0; i < n; i++) {
+    joints[i].inertiaScale = inertias[i] / base;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  FORWARD KINEMATICS
+//  Returns array of points: [base, actuator-top, j1, j2, ..., end]
+// ─────────────────────────────────────────────────────────────
+function computeFK() {
+  const pts = [];
+  pts.push({ x: BASE_X, y: BASE_Y });
+  const topY = BASE_Y - lin.pos;
+  pts.push({ x: BASE_X, y: topY });
+  let angle = 0;
+  let cx = BASE_X, cy = topY;
+  for (let i = 0; i < cfg.numRot; i++) {
+    angle += joints[i].angle;
+    const rad = (angle - 90) * Math.PI / 180;
+    const nx = cx + cfg.rotLengths[i] * Math.cos(rad);
+    const ny = cy + cfg.rotLengths[i] * Math.sin(rad);
+    pts.push({ x: nx, y: ny });
+    cx = nx; cy = ny;
+  }
+  return pts;
+}
+
+function getEndEffector() {
+  const pts = computeFK();
+  const end = pts[pts.length - 1];
+  return { x: end.x - BASE_X, y: -(end.y - BASE_Y) };
+}
+
+// ─────────────────────────────────────────────────────────────
+//  PHYSICS STEP
+// ─────────────────────────────────────────────────────────────
+function physicsStep(dt) {
+  // — Linear actuator —
+  {
+    const err = lin.target - lin.pos;
+    const brakingDist = (lin.vel * lin.vel) / (2 * cfg.linAccel + 0.001);
+    let accel;
+    if (Math.abs(err) > brakingDist * 1.1) {
+      accel = Math.sign(err) * cfg.linAccel;
+    } else {
+      accel = -Math.sign(lin.vel) * cfg.linAccel;
+    }
+    lin.vel += accel * dt;
+    lin.vel = Math.max(-cfg.linSpeed, Math.min(cfg.linSpeed, lin.vel));
+    if (Math.abs(err) < 0.1 && Math.abs(lin.vel) < 0.5) {
+      lin.vel = 0; lin.pos = lin.target;
+    } else {
+      lin.pos += lin.vel * dt;
+      lin.pos = Math.max(0, Math.min(cfg.linMax, lin.pos));
+    }
+  }
+
+  // — Rotational joints —
+  const extRatio = 1 + (lin.pos / (cfg.linMax || 1)) * 1.5;
+  const dampFactor = Math.pow(cfg.damping, dt);
+  const maxV = cfg.maxSpeed;
+  const maxA = cfg.torqueLimit;
+
+  for (let i = 0; i < cfg.numRot; i++) {
+    const j = joints[i];
+    const extBoost = i === 0 ? extRatio : 1 + (extRatio - 1) * (1 - i / cfg.numRot);
+    const effInertia = j.inertiaScale * extBoost;
+    const effMaxA = maxA / effInertia;
+    const effMaxV = maxV / Math.sqrt(effInertia);
+
+    let err = j.targetAngle - j.angle;
+    while (err > 180) err -= 360;
+    while (err < -180) err += 360;
+
+    const brakingDist = (j.vel * j.vel) / (2 * effMaxA + 0.001);
+    let accel;
+    if (Math.abs(err) > brakingDist * 1.1) {
+      accel = Math.sign(err) * effMaxA;
+    } else {
+      accel = -Math.sign(j.vel) * effMaxA;
+    }
+    j.vel += accel * dt;
+    j.vel *= dampFactor;
+    j.vel = Math.max(-effMaxV, Math.min(effMaxV, j.vel));
+    if (Math.abs(err) < 0.05 && Math.abs(j.vel) < 0.5) {
+      j.vel = 0; j.angle = j.targetAngle;
+    } else {
+      j.angle += j.vel * dt;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  SIMULATION LOOP
+// ─────────────────────────────────────────────────────────────
+let target = null;
+let simRunning = false;
+let animFrame = null;
+let lastTime = null;
+let frameCount = 0;
+let converged = false;
+let stepFn = null;
+
+function startSim() {
+  if (simRunning) stopSim();
+  frameCount = 0; converged = false; lastTime = null;
+  simRunning = true;
+  runBtn.classList.add('is-active');
+  setPill('running', 'Running');
+  clearOutput();
+  addOutput('// Simulation started.', 'info');
+  animFrame = requestAnimationFrame(simLoop);
+}
+
+function stopSim(fromCode) {
+  if (!simRunning) return;
+  simRunning = false;
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  runBtn.classList.remove('is-active');
+  if (converged) {
+    setPill('converged', 'Converged ✓');
+  } else {
+    setPill('idle', 'Stopped');
+    if (!fromCode) addOutput(`// Stopped at frame ${frameCount}.`, 'info');
+  }
+}
+
+function simLoop(ts) {
+  if (!simRunning) return;
+  if (!lastTime) lastTime = ts;
+  const dt = Math.min((ts - lastTime) / 1000, 0.05);
+  lastTime = ts;
+  frameCount++;
+
+  if (stepFn) {
+    try {
+      const ee = getEndEffector();
+      const tx = target ? target.x : 0, ty = target ? target.y : 0;
+      const err = target ? Math.sqrt((ee.x - tx) ** 2 + (ee.y - ty) ** 2) : null;
+      const angles = joints.map(j => j.angle);
+      const vels = joints.map(j => j.vel);
+      stepFn(dt, lin.pos, lin.vel, angles, vels, ee.x, ee.y, tx, ty, err);
+    } catch (e) {
+      addOutput('Runtime error in step(): ' + e.message, 'error');
+      stopSim(); return;
+    }
+  }
+
+  physicsStep(dt);
+  draw();
+  updateMetrics();
+  updateVelBars();
+  document.getElementById('m-frames').textContent = frameCount;
+  if (simRunning) animFrame = requestAnimationFrame(simLoop);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  USER API
+// ─────────────────────────────────────────────────────────────
+function setExtension(px) {
+  lin.target = Math.max(0, Math.min(cfg.linMax, px));
+}
+function setTargetAngle(i, deg) {
+  if (i >= 0 && i < cfg.numRot) joints[i].targetAngle = deg;
+}
+function getExtension() { return lin.pos; }
+function getExtVelocity() { return lin.vel; }
+function getAngle(i) { return (i >= 0 && i < cfg.numRot) ? joints[i].angle : 0; }
+function getVelocity(i) { return (i >= 0 && i < cfg.numRot) ? joints[i].vel : 0; }
+function getInertiaScale(i) { return (i >= 0 && i < cfg.numRot) ? joints[i].inertiaScale : 1; }
+
+// ─────────────────────────────────────────────────────────────
+//  CODE COMPILATION
+//  A lightweight Java-flavored-JS subset: swaps a few Java keywords
+//  and Math.* spellings so the student's step(dt) can run directly
+//  as JS. This is a stand-in until the site has a real Java runtime
+//  (see /site/README.md — "Executing student code").
+// ─────────────────────────────────────────────────────────────
+const runBtn = document.getElementById('run-btn');
+
+const javaToJS = src => src
+  .replace(/\bdouble\b/g, 'let').replace(/\bint\b/g, 'let').replace(/\bfloat\b/g, 'let')
+  .replace(/\bboolean\b/g, 'let').replace(/\blong\b/g, 'let').replace(/\bString\b/g, 'let')
+  .replace(/\bMath\.(atan2|acos|asin|sqrt|cos|sin|tan|pow|abs|min|max|PI|floor|ceil|round|signum)\b/g,
+    (_, fn) => fn === 'signum' ? 'Math.sign' : `Math.${fn}`)
+  .replace(/\bSystem\.out\.println\b/g, '__println').replace(/\bprintln\b/g, '__println')
+  .replace(/\bstopSim\b/g, '__stopSim');
+
+function compileAndRun() {
+  clearOutput();
+  const src = editor.value;
+  const stepMatch = src.match(/void\s+step\s*\(\s*(?:double\s+)?dt\s*\)\s*\{([\s\S]*)\}/);
+  if (!stepMatch) {
+    addOutput('Error: cannot find  void step(double dt) { ... }', 'error');
+    return;
+  }
+  const initSrc = src.slice(0, stepMatch.index);
+  const stepSrc = stepMatch[1];
+
+  const initLogs = [];
+  try {
+    const initFn = new Function(
+      'numRotJoints', 'lengths', 'maxExtension', '__println',
+      '"use strict";\n' + javaToJS(initSrc)
+    );
+    initFn(cfg.numRot, cfg.rotLengths.slice(0, cfg.numRot), cfg.linMax,
+      (...a) => initLogs.push({ t: a.join(' '), c: 'line' }));
+    initLogs.forEach(l => addOutput(l.t, l.c));
+  } catch (e) { addOutput('Init error: ' + e.message, 'error'); return; }
+
+  let printCount = 0, printWarned = false;
+  const MAX_PRINTS = 20;
+  try {
+    const rawStep = new Function(
+      'dt',
+      'extension', 'extVelocity',
+      'angles', 'velocities',
+      'endX', 'endY', 'targetX', 'targetY', 'error',
+      'setExtension', 'setTargetAngle',
+      'getExtension', 'getExtVelocity',
+      'getAngle', 'getVelocity', 'getInertiaScale',
+      'numRotJoints', 'lengths', 'maxExtension',
+      '__println', '__stopSim',
+      '"use strict";\n' + javaToJS(stepSrc)
+    );
+    stepFn = (dt, extPos, extVel, angles, vels, ex, ey, tx, ty, err) => {
+      const print = (...a) => {
+        if (++printCount <= MAX_PRINTS) addOutput(a.join(' '), 'line');
+        else if (!printWarned) { printWarned = true; addOutput('(println limited in step())', 'warn'); }
+      };
+      const stop = () => {
+        converged = true;
+        stopSim(true);
+        addOutput(`✓ Converged in ${frameCount} frames.`, 'ok');
+      };
+      rawStep(dt, extPos, extVel, angles, vels, ex, ey, tx, ty, err,
+        setExtension, setTargetAngle,
+        getExtension, getExtVelocity,
+        getAngle, getVelocity, getInertiaScale,
+        cfg.numRot, cfg.rotLengths.slice(0, cfg.numRot), cfg.linMax,
+        print, stop);
+    };
+    addOutput('// step() compiled OK.', 'info');
+    startSim();
+  } catch (e) { addOutput('Compile error: ' + e.message, 'error'); stepFn = null; }
+}
+
+runBtn.addEventListener('click', compileAndRun);
+document.getElementById('stop-btn').addEventListener('click', () => stopSim());
+
+// ─────────────────────────────────────────────────────────────
+//  DRAWING (Team Blue palette — see /site/assets/css/tokens/colors.css)
+// ─────────────────────────────────────────────────────────────
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+function drawGrid() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = css('--border'); ctx.lineWidth = 0.5;
+  const step = 50;
+  for (let x = 0; x <= W; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y <= H; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  ctx.strokeStyle = css('--text-muted'); ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(0, BASE_Y); ctx.lineTo(W, BASE_Y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(BASE_X, 0); ctx.lineTo(BASE_X, H); ctx.stroke();
+  ctx.fillStyle = css('--text-muted'); ctx.font = '10px ' + css('--font-mono');
+  ctx.textAlign = 'left';
+  for (let x = -Math.floor((W/2)/step)*step; x <= W/2; x += step) {
+    if (x === 0) continue;
+    ctx.fillText(x.toFixed(0), BASE_X + x + 2, BASE_Y - 2);
+  }
+  ctx.textAlign = 'right';
+  for (let y = -Math.floor((H - BASE_Y)/step)*step; y <= BASE_Y; y += step) {
+    if (y === 0) continue;
+    ctx.fillText(y.toFixed(0), BASE_X - 2, BASE_Y - y - 2);
+  }
+}
+
+function drawTarget() {
+  if (!target) return;
+  const tx = BASE_X + target.x, ty = BASE_Y - target.y;
+  const totalRot = cfg.rotLengths.slice(0, cfg.numRot).reduce((a, b) => a + b, 0);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,149,200,0.18)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+  ctx.beginPath(); ctx.arc(BASE_X, BASE_Y, totalRot, Math.PI, 0, false); ctx.stroke();
+  ctx.beginPath(); ctx.arc(BASE_X, BASE_Y - cfg.linMax, totalRot, Math.PI, 0, false); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = css('--text-strong'); ctx.lineWidth = 1.5;
+  const r = 12;
+  ctx.beginPath(); ctx.moveTo(tx - r, ty); ctx.lineTo(tx + r, ty); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx, ty - r); ctx.lineTo(tx, ty + r); ctx.stroke();
+  ctx.beginPath(); ctx.arc(tx, ty, r * 0.55, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+function drawArm(pts) {
+  const base = pts[0], top = pts[1];
+  ctx.save();
+  ctx.fillStyle = css('--grey-200');
+  ctx.strokeStyle = css('--border-strong');
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.rect(base.x - 18, base.y, 36, 12);
+  ctx.fill(); ctx.stroke();
+
+  const railW = 8;
+  ctx.fillStyle = css('--grey-100');
+  ctx.strokeStyle = css('--blue-700');
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.rect(base.x - railW / 2, top.y, railW, base.y - top.y);
+  ctx.fill(); ctx.stroke();
+
+  const shaftGrad = ctx.createLinearGradient(base.x - 3, top.y, base.x + 3, top.y);
+  shaftGrad.addColorStop(0, 'rgba(0,149,200,0.45)');
+  shaftGrad.addColorStop(1, 'rgba(0,149,200,0.85)');
+  ctx.fillStyle = shaftGrad;
+  ctx.beginPath();
+  ctx.rect(base.x - 3, top.y, 6, base.y - top.y);
+  ctx.fill();
+
+  ctx.fillStyle = css('--blue-600');
+  ctx.strokeStyle = css('--blue-700');
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.rect(base.x - 10, top.y - 6, 20, 12);
+  ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = css('--text-muted');
+  ctx.font = '9px ' + css('--font-mono');
+  ctx.textAlign = 'left';
+  ctx.fillText(lin.pos.toFixed(0) + 'px', base.x + 13, top.y + 4);
+  ctx.restore();
+
+  const nRot = pts.length - 2;
+  for (let i = 0; i < nRot; i++) {
+    const from = pts[i + 1], to = pts[i + 2];
+    const j = joints[i];
+    const speedFrac = j ? Math.min(Math.abs(j.vel) / cfg.maxSpeed, 1) : 0;
+    // Team Blue → danger red as joint speed increases (calm → hot)
+    const r = Math.round(0 + speedFrac * 214);
+    const g = Math.round(149 - speedFrac * 80);
+    const b = Math.round(200 - speedFrac * 131);
+    ctx.strokeStyle = `rgb(${r},${g},${b})`;
+    ctx.lineWidth = 7 - i * 1.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); ctx.stroke();
+  }
+
+  for (let i = 1; i < pts.length; i++) {
+    const isEnd = i === pts.length - 1;
+    const isCarriage = i === 1;
+    if (isCarriage) continue;
+    ctx.beginPath();
+    ctx.arc(pts[i].x, pts[i].y, isEnd ? 6 : 7, 0, Math.PI * 2);
+    ctx.fillStyle = isEnd ? '#0095C8' : '#22a6d4';
+    ctx.fill();
+    ctx.strokeStyle = css('--text-strong'); ctx.lineWidth = 0.5; ctx.stroke();
+    if (!isEnd) {
+      const ji = i - 2;
+      ctx.fillStyle = css('--text-muted');
+      ctx.font = '10px ' + css('--font-body');
+      ctx.textAlign = 'left';
+      ctx.fillText(`R${ji + 1}`, pts[i].x + 8, pts[i].y - 4);
+      if (joints[ji]) {
+        ctx.font = '9px ' + css('--font-mono');
+        ctx.fillStyle = css('--text-muted');
+        ctx.fillText(`I=${joints[ji].inertiaScale.toFixed(2)}`, pts[i].x + 8, pts[i].y + 7);
+      }
+    } else {
+      ctx.save();
+      ctx.shadowBlur = 10; ctx.shadowColor = '#0095C8';
+      ctx.beginPath(); ctx.arc(pts[i].x, pts[i].y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#0095C8'; ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+function draw() {
+  drawGrid(); drawTarget();
+  const pts = computeFK();
+  drawArm(pts);
+}
+
+// ─────────────────────────────────────────────────────────────
+//  METRICS
+// ─────────────────────────────────────────────────────────────
+function updateMetrics() {
+  const ee = getEndEffector();
+  document.getElementById('m-ex').textContent = ee.x.toFixed(1);
+  document.getElementById('m-ey').textContent = ee.y.toFixed(1);
+  document.getElementById('m-ext').textContent = lin.pos.toFixed(1);
+  if (target) {
+    const tx = target.x, ty = target.y;
+    document.getElementById('m-tx').textContent = tx.toFixed(1);
+    document.getElementById('m-ty').textContent = ty.toFixed(1);
+    const err = Math.sqrt((ee.x - tx) ** 2 + (ee.y - ty) ** 2);
+    const el = document.getElementById('m-err');
+    el.textContent = err.toFixed(2);
+    el.className = 'tot-metric-value ' + (simRunning ? 'tot-metric-value--running' : err < 5 ? 'tot-metric-value--good' : err < 25 ? '' : 'tot-metric-value--bad');
+  } else {
+    ['m-tx', 'm-ty', 'm-err'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+      document.getElementById(id).className = 'tot-metric-value';
+    });
+  }
+}
+
+function setPill(state, label) {
+  const el = document.getElementById('sim-pill');
+  el.textContent = label;
+  el.className = 'tot-badge ' + (state === 'running' ? 'tot-badge--brand tot-badge--pulse' : state === 'converged' ? 'tot-badge--success' : 'tot-badge--soft');
+}
+
+// ─────────────────────────────────────────────────────────────
+//  VELOCITY BARS
+// ─────────────────────────────────────────────────────────────
+function buildVelBars() {
+  const c = document.getElementById('vel-bars');
+  c.innerHTML = '';
+  const ld = document.createElement('div'); ld.className = 'tot-vel-row';
+  ld.innerHTML = `<span class="tot-vel-name" style="color:var(--blue-700)">Linear ↕</span>
+    <div class="tot-vel-track"><div class="tot-vel-fill" id="vbar-lin" style="background:var(--blue-700)"></div></div>
+    <span class="tot-vel-value" id="vval-lin">0.0 px/s</span>`;
+  c.appendChild(ld);
+  for (let i = 0; i < cfg.numRot; i++) {
+    const d = document.createElement('div'); d.className = 'tot-vel-row';
+    d.innerHTML = `<span class="tot-vel-name">Rot J${i + 1}</span>
+      <div class="tot-vel-track"><div class="tot-vel-fill" id="vbar-${i}"></div></div>
+      <span class="tot-vel-value" id="vval-${i}">0.0°/s</span>`;
+    c.appendChild(d);
+  }
+}
+
+function updateVelBars() {
+  const lb = document.getElementById('vbar-lin'), lv = document.getElementById('vval-lin');
+  if (lb) { lb.style.width = Math.min(Math.abs(lin.vel) / cfg.linSpeed * 100, 100).toFixed(1) + '%'; }
+  if (lv) lv.textContent = lin.vel.toFixed(1) + ' px/s';
+  for (let i = 0; i < cfg.numRot; i++) {
+    const b = document.getElementById(`vbar-${i}`), v = document.getElementById(`vval-${i}`);
+    if (!b || !joints[i]) continue;
+    const spd = joints[i].vel;
+    b.style.width = Math.min(Math.abs(spd) / cfg.maxSpeed * 100, 100).toFixed(1) + '%';
+    b.style.background = spd > 0 ? 'var(--tot-blue)' : 'var(--danger)';
+    if (v) v.textContent = spd.toFixed(1) + '°/s';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  JOINT CONTROLS
+// ─────────────────────────────────────────────────────────────
+function buildJointControls() {
+  const c = document.getElementById('joint-controls');
+  c.innerHTML = '';
+  for (let i = 0; i < cfg.numRot; i++) {
+    const d = document.createElement('div'); d.className = 'tot-joint-block';
+    d.innerHTML = `<div class="tot-joint-block__title">
+        Rot Joint ${i + 1}
+        <span class="tot-joint-block__inertia" id="inertia-${i}">I=—</span>
+      </div>
+      <div class="tot-control-row">
+        <span class="tot-control-label">Link length</span>
+        <input type="range" class="tot-range" min="20" max="200" step="5" value="${cfg.rotLengths[i]}" id="rlen-${i}">
+        <span class="tot-control-value" id="rlen-val-${i}">${cfg.rotLengths[i]} px</span>
+      </div>`;
+    c.appendChild(d);
+    document.getElementById(`rlen-${i}`).addEventListener('input', e => {
+      cfg.rotLengths[i] = parseFloat(e.target.value);
+      document.getElementById(`rlen-val-${i}`).textContent = cfg.rotLengths[i] + ' px';
+      recomputeInertia(); updateInertiaLabels(); draw();
+    });
+  }
+  updateInertiaLabels();
+}
+
+function updateInertiaLabels() {
+  for (let i = 0; i < cfg.numRot; i++) {
+    const el = document.getElementById(`inertia-${i}`);
+    if (el && joints[i]) el.textContent = `I=${joints[i].inertiaScale.toFixed(3)}`;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  CONTROL WIRING
+// ─────────────────────────────────────────────────────────────
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const px = (e.clientX - rect.left) * (W / rect.width);
+  const py = (e.clientY - rect.top) * (H / rect.height);
+  target = { x: px - BASE_X, y: -(py - BASE_Y) };
+  document.getElementById('target-hint').textContent =
+    `Target: (${target.x.toFixed(1)}, ${target.y.toFixed(1)}) — press Start to solve`;
+  draw(); updateMetrics();
+});
+
+document.getElementById('num-rot-joints').addEventListener('change', e => {
+  cfg.numRot = parseInt(e.target.value);
+  stopSim(); initPhysics(); buildJointControls(); buildVelBars(); draw(); updateMetrics();
+});
+
+document.getElementById('lin-max').addEventListener('input', e => {
+  cfg.linMax = parseFloat(e.target.value);
+  document.getElementById('lin-max-val').textContent = cfg.linMax + ' px';
+  recomputeInertia(); draw();
+});
+document.getElementById('lin-speed').addEventListener('input', e => {
+  cfg.linSpeed = parseFloat(e.target.value);
+  document.getElementById('lin-speed-val').textContent = cfg.linSpeed + ' px/s';
+});
+document.getElementById('lin-accel').addEventListener('input', e => {
+  cfg.linAccel = parseFloat(e.target.value);
+  document.getElementById('lin-accel-val').textContent = cfg.linAccel + ' px/s²';
+});
+
+document.getElementById('max-speed').addEventListener('input', e => {
+  cfg.maxSpeed = parseFloat(e.target.value);
+  document.getElementById('max-speed-val').textContent = cfg.maxSpeed + '°/s';
+});
+document.getElementById('torque-limit').addEventListener('input', e => {
+  cfg.torqueLimit = parseFloat(e.target.value);
+  document.getElementById('torque-val').textContent = cfg.torqueLimit + '°/s²';
+});
+document.getElementById('damping').addEventListener('input', e => {
+  cfg.damping = parseFloat(e.target.value);
+  document.getElementById('damping-val').textContent = cfg.damping.toFixed(2);
+});
+document.getElementById('density').addEventListener('input', e => {
+  cfg.density = parseFloat(e.target.value);
+  document.getElementById('density-val').textContent = cfg.density.toFixed(1);
+  recomputeInertia(); updateInertiaLabels();
+});
+
+// ─────────────────────────────────────────────────────────────
+//  UNDO / SAVE
+// ─────────────────────────────────────────────────────────────
+let undoStack = [], undoPtr = -1, ignoreNext = false, savedCode = null;
+function pushUndo(v) {
+  undoStack = undoStack.slice(0, undoPtr + 1);
+  if (undoStack.length && undoStack[undoStack.length - 1] === v) return;
+  undoStack.push(v); if (undoStack.length > 200) undoStack.shift();
+  undoPtr = undoStack.length - 1;
+}
+function applyUndo() { if (undoPtr > 0) { undoPtr--; ignoreNext = true; editor.value = undoStack[undoPtr]; updateSaveInd(); } }
+function applyRedo() { if (undoPtr < undoStack.length - 1) { undoPtr++; ignoreNext = true; editor.value = undoStack[undoPtr]; updateSaveInd(); } }
+function updateSaveInd() {
+  const el = document.getElementById('save-indicator');
+  if (!savedCode) { el.textContent = 'No save yet'; el.className = 'tot-save-indicator'; }
+  else if (editor.value === savedCode) { el.textContent = '✓ Saved'; el.className = 'tot-save-indicator tot-save-indicator--saved'; }
+  else { el.textContent = 'Unsaved changes'; el.className = 'tot-save-indicator'; }
+}
+let iTimer = null;
+editor.addEventListener('input', () => {
+  if (ignoreNext) { ignoreNext = false; return; }
+  clearTimeout(iTimer); iTimer = setTimeout(() => pushUndo(editor.value), 300);
+  updateSaveInd();
+});
+editor.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); compileAndRun(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); applyUndo(); return; }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); applyRedo(); return; }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = editor.selectionStart, en = editor.selectionEnd;
+    editor.value = editor.value.substring(0, s) + '  ' + editor.value.substring(en);
+    editor.selectionStart = editor.selectionEnd = s + 2;
+    pushUndo(editor.value); return;
+  }
+  if (['Enter','Backspace','Delete'].includes(e.key)) pushUndo(editor.value);
+});
+document.getElementById('save-btn').addEventListener('click', () => {
+  savedCode = editor.value;
+  document.getElementById('restore-btn').disabled = false;
+  document.getElementById('save-indicator').textContent = '✓ Saved';
+  document.getElementById('save-indicator').className = 'tot-save-indicator tot-save-indicator--saved';
+  pushUndo(editor.value);
+});
+document.getElementById('restore-btn').addEventListener('click', () => {
+  if (savedCode) { pushUndo(editor.value); editor.value = savedCode; pushUndo(editor.value); updateSaveInd(); addOutput('// Restored from save.', 'info'); }
+});
+
+function addOutput(text, cls) {
+  const d = document.createElement('div'); d.className = cls ? 'tot-console__line--' + cls : '';
+  d.textContent = text;
+  outputPanel.appendChild(d); outputPanel.scrollTop = outputPanel.scrollHeight;
+}
+function clearOutput() { outputPanel.innerHTML = ''; }
+
+// ─────────────────────────────────────────────────────────────
+//  DEFAULT CODE
+// ─────────────────────────────────────────────────────────────
+const defaultCode = `// Inverse Kinematics Solver
+// Robot: vertical linear actuator (prismatic J0) + rotational chain
+//
+// step(dt) is called every frame (~60fps).
+//
+// PRISMATIC JOINT API:
+//   setExtension(px)         — target height 0..maxExtension
+//   getExtension()           — current extension in px
+//   getExtVelocity()         — current extension velocity px/s
+//
+// ROTATIONAL JOINT API (i = 0..numRotJoints-1):
+//   setTargetAngle(i, deg)   — set desired world-space angle
+//   getAngle(i)              — current actual angle
+//   getVelocity(i)           — current angular velocity deg/s
+//   getInertiaScale(i)       — inertia ratio (higher = sluggish)
+//                              Note: base joints get extra inertia
+//                              when the linear actuator is extended!
+//
+// STATE:
+//   extension, extVelocity   — prismatic joint state
+//   angles[], velocities[]   — rotational joint states
+//   endX, endY               — end effector position
+//   targetX, targetY, error  — target & distance
+//   maxExtension             — configured max extension px
+//   numRotJoints              — number of rotational joints
+//   lengths[]                — rotational link lengths
+//
+// Call stopSim() when your solver has converged.
+
+// One-time init (runs before first step):
+println("IK solver initialized.");
+println("Rot joints: " + numRotJoints + "  Max ext: " + maxExtension);
+
+void step(double dt) {
+  if (error == null || error < 2.0) {
+    stopSim();
+    return;
+  }
+
+  // ── Step 1: Solve for extension ──────────────────────────
+  // The target Y coordinate tells us roughly how high the
+  // carriage should be. We decompose:
+  //   targetY = extension + (rotational chain vertical component)
+  // For a first pass, aim to put the carriage at a height that
+  // leaves the rotational chain with a reachable horizontal reach.
+
+  double totalRotLen = 0;
+  for (int k = 0; k < numRotJoints; k++) totalRotLen += lengths[k];
+
+  double desiredExt = targetY - totalRotLen * 0.5;
+  desiredExt = Math.max(0, Math.min(maxExtension, desiredExt));
+  setExtension(desiredExt);
+
+  // ── Step 2: CCD on rotational joints ────────────────────
+  // Cyclic Coordinate Descent — iterate tip-to-base.
+  // Each joint rotates to aim the end effector at the target.
+  // The physics engine applies inertia, so the arm moves
+  // smoothly rather than snapping.
+
+  double pivotBaseX = 0;
+  double pivotBaseY = getExtension();
+
+  for (int i = numRotJoints - 1; i >= 0; i--) {
+    double cumAngle = 0;
+    for (int k = 0; k < i; k++) cumAngle += getAngle(k);
+
+    double px = pivotBaseX, py = pivotBaseY;
+    double ang = 0;
+    for (int k = 0; k < i; k++) {
+      ang += getAngle(k);
+      double rad = (ang - 90.0) * Math.PI / 180.0;
+      px += lengths[k] * Math.cos(rad);
+      py += lengths[k] * Math.sin(rad);
+    }
+
+    double toEndX = endX - px;
+    double toEndY = endY - py;
+    double toTgtX = targetX - px;
+    double toTgtY = targetY - py;
+
+    double angToEnd = Math.atan2(toEndY, toEndX) * 180.0 / Math.PI;
+    double angToTgt = Math.atan2(toTgtY, toTgtX) * 180.0 / Math.PI;
+
+    double delta = angToTgt - angToEnd;
+    while (delta > 180) delta -= 360;
+    while (delta < -180) delta += 360;
+
+    setTargetAngle(i, getAngle(i) + delta);
+  }
+}`;
+
+editor.value = defaultCode;
+pushUndo(defaultCode);
+updateSaveInd();
+initPhysics();
+buildJointControls();
+buildVelBars();
+draw();
+updateMetrics();
+</script>
+</body>
+</html>

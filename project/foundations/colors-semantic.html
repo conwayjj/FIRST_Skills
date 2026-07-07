@@ -1,0 +1,28 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Semantic Tokens" subtitle="Aliases components reference — surface, text, brand, states" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface); font-family: var(--font-body); }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .tok { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .bar { height: 40px; }
+  .t { padding: 6px 8px; }
+  .tn { font-family: var(--font-mono); font-size: 11px; color: var(--text-strong); }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="tok"><div class="bar" style="background:var(--brand)"></div><div class="t"><div class="tn">--brand</div></div></div>
+    <div class="tok"><div class="bar" style="background:var(--brand-strong)"></div><div class="t"><div class="tn">--brand-strong</div></div></div>
+    <div class="tok"><div class="bar" style="background:var(--brand-soft)"></div><div class="t"><div class="tn">--brand-soft</div></div></div>
+    <div class="tok"><div class="bar" style="background:var(--surface-dark)"></div><div class="t"><div class="tn">--surface-dark</div></div></div>
+    <div class="tok"><div class="bar" style="background:var(--text-body)"></div><div class="t"><div class="tn">--text-body</div></div></div>
+    <div class="tok"><div class="bar" style="background:var(--text-muted)"></div><div class="t"><div class="tn">--text-muted</div></div></div>
+    <div class="tok"><div class="bar" style="background:var(--success)"></div><div class="t"><div class="tn">--success</div></div></div>
+    <div class="tok"><div class="bar" style="background:var(--danger)"></div><div class="t"><div class="tn">--danger</div></div></div>
+  </div>
+</body>
+</html>
