@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Module Template — That ONE Team Training Hub</title>
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/module.css">
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+      </div>
+    </div>
+  </div>
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="../index.html">
+        <img class="tot-header__logo-img" src="../assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../index.html#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../README.md">Build Guide</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tot-section tot-section--tight tot-section--surface">
+    <div class="tot-container">
+
+      <div class="tot-breadcrumb">
+        <a href="../index.html">Home</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <a href="../index.html#modules">Modules</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <span class="tot-breadcrumb__current" data-module-title>Module Template</span>
+      </div>
+
+      <div class="tot-module-header">
+        <div class="tot-module-header__badges">
+          <span class="tot-badge tot-badge--soft" data-module-category>Template</span>
+          <span class="tot-badge tot-badge--warning">Template Preview</span>
+        </div>
+        <h1 class="tot-module-header__title" data-module-title-heading>Module Template</h1>
+        <p class="tot-module-header__lead">
+          This is the scaffold every training module is built from: a short lesson, a
+          code panel, and a live simulation that reacts immediately. This particular
+          page hasn't been written yet — you're looking at the pattern, not the lesson.
+        </p>
+      </div>
+
+      <div class="tot-callout">
+        <span>🛈</span>
+        <span>
+          <strong>This page is a starting point, not a finished module.</strong>
+          The code panel, canvas, and telemetry below are wired to a placeholder
+          simulation so you can see the pattern working end to end. To build the real
+          lesson, see the <a href="../README.md">build guide (README.md)</a> —
+          "Building a new module page."
+        </span>
+      </div>
+
+      <div class="tot-workbench">
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Robot.java</span>
+            <div class="tot-panel__actions">
+              <button class="tot-btn tot-btn--sm tot-btn--secondary" style="color:var(--tot-white);border-color:rgba(255,255,255,.4);" id="reset-btn" type="button">Reset</button>
+              <button class="tot-btn tot-btn--sm tot-btn--primary" id="run-btn" type="button">Run ▸</button>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+            <textarea class="tot-code-editor" id="code-input" spellcheck="false">// A real module replaces this with a short, focused lesson —
+// e.g. "fill in calculateWheelSpeeds()" — plus starter code
+// the student edits and runs.
+//
+// Clicking Run below calls this scaffold's onRun() hook, which is
+// where a real module would execute (or simulate) this code and
+// update the simulation state.
+
+public class Robot {
+    public void run() {
+        // Try me: click "Run" to nudge the simulation on the right.
+    }
+}</textarea>
+            <div class="tot-console" id="console-output">
+              <div class="tot-console__line--muted">Ready. Click "Run" to execute.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Simulation</span>
+          </div>
+          <div class="tot-panel__body">
+            <div class="tot-sim-canvas-wrap">
+              <canvas id="sim-canvas" width="420" height="300" aria-label="Simulation canvas"></canvas>
+            </div>
+            <div class="tot-telemetry">
+              <div class="tot-telemetry__item">
+                <div class="tot-telemetry__label">X</div>
+                <div class="tot-telemetry__value" id="tele-x">0.0</div>
+              </div>
+              <div class="tot-telemetry__item">
+                <div class="tot-telemetry__label">Y</div>
+                <div class="tot-telemetry__value" id="tele-y">0.0</div>
+              </div>
+              <div class="tot-telemetry__item">
+                <div class="tot-telemetry__label">Heading</div>
+                <div class="tot-telemetry__value" id="tele-heading">0°</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Objective</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">What a real module explains here</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 0;">
+          A short paragraph of lesson content, then a concrete goal ("get the simulated
+          arm to hold 45°", "drive the mecanum base in a square"). Keep it scoped to one
+          idea per module — depth comes from the code, not the prose.
+        </p>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="../assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="../index.html">Home</a>
+      <a class="tot-footer__link" href="../index.html#modules">Modules</a>
+      <a class="tot-footer__link" href="../README.md">Build Guide</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="../assets/js/nav.js"></script>
+<script src="../assets/js/module-runtime.js"></script>
+<script>
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var title = params.get('title') || 'Module Template';
+    var category = params.get('category') || 'Template';
+    document.title = title + ' — That ONE Team Training Hub';
+    document.querySelectorAll('[data-module-title]').forEach(function (el) { el.textContent = title; });
+    document.querySelectorAll('[data-module-title-heading]').forEach(function (el) { el.textContent = title; });
+    document.querySelectorAll('[data-module-category]').forEach(function (el) { el.textContent = category; });
+
+    // Placeholder simulation: a "robot" dot that drifts inside the canvas.
+    // A real module replaces initialState/step/draw/onRun with the actual
+    // lesson simulation (arm kinematics, drivetrain vectors, filter output...).
+    TotModuleRuntime.init({
+      canvasId: 'sim-canvas',
+      consoleId: 'console-output',
+      runButtonId: 'run-btn',
+      resetButtonId: 'reset-btn',
+      codeInputId: 'code-input',
+      initialState: function () {
+        return { x: 210, y: 150, heading: 0, vx: 0, vy: 0 };
+      },
+      step: function (state, dt) {
+        state.x += state.vx * dt;
+        state.y += state.vy * dt;
+        state.heading += 40 * dt;
+        state.vx *= 0.98;
+        state.vy *= 0.98;
+        state.x = Math.max(20, Math.min(400, state.x));
+        state.y = Math.max(20, Math.min(280, state.y));
+
+        document.getElementById('tele-x').textContent = state.x.toFixed(1);
+        document.getElementById('tele-y').textContent = state.y.toFixed(1);
+        document.getElementById('tele-heading').textContent = (state.heading % 360).toFixed(0) + '°';
+      },
+      draw: function (ctx, state, dt, canvas) {
+        ctx.fillStyle = '#f6f7f7';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#dcdddf';
+        ctx.lineWidth = 1;
+        for (var gx = 0; gx <= canvas.width; gx += 20) {
+          ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, canvas.height); ctx.stroke();
+        }
+        for (var gy = 0; gy <= canvas.height; gy += 20) {
+          ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(canvas.width, gy); ctx.stroke();
+        }
+
+        ctx.save();
+        ctx.translate(state.x, state.y);
+        ctx.rotate((state.heading * Math.PI) / 180);
+        ctx.fillStyle = '#0095C8';
+        ctx.fillRect(-14, -14, 28, 28);
+        ctx.strokeStyle = '#003a4e';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-14, -14, 28, 28);
+        ctx.beginPath();
+        ctx.moveTo(0, -14);
+        ctx.lineTo(0, -22);
+        ctx.strokeStyle = '#1b1c1d';
+        ctx.stroke();
+        ctx.restore();
+      },
+      onRun: function (sourceText, state) {
+        state.vx += (Math.random() - 0.2) * 120;
+        state.vy += (Math.random() - 0.5) * 80;
+      },
+      onReset: function (state) {},
+    });
+  })();
+</script>
+</body>
+</html>

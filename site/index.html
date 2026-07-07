@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>That ONE Team — Training Hub</title>
+<meta name="description" content="Team 4967's interactive FRC training hub — write real Java code and see it control a live simulation, module by module.">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+        <div class="tot-header__socials">
+          <a class="tot-header__social" href="https://www.facebook.com/ThatONETeam" aria-label="Facebook" target="_blank" rel="noopener">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M14 8h3V4h-3c-2.2 0-4 1.8-4 4v2H7v4h3v6h4v-6h3l1-4h-4V8c0-.6.4-1 1-1z"/></svg>
+          </a>
+          <a class="tot-header__social" href="https://x.com/team4967" aria-label="X" target="_blank" rel="noopener">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h3l-7 8 8 12h-6l-5-7-5 7H0l8-11L0 2h6l4 6 5-6z"/></svg>
+          </a>
+          <a class="tot-header__social" href="https://www.instagram.com/frc_4967" aria-label="Instagram" target="_blank" rel="noopener">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="index.html">
+        <img class="tot-header__logo-img" src="assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+
+      <button class="tot-nav__toggle" type="button" aria-label="Toggle menu" aria-expanded="false">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="#about">About This Hub</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="#build">For Developers</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link tot-nav__link--cta" href="https://www.thatoneteam.org/" target="_blank" rel="noopener">ThatONEteam.org ↗</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <section class="tot-hero">
+    <div class="tot-hero__inner">
+      <div>
+        <div class="tot-hero__badges">
+          <span class="tot-badge tot-badge--brand">Team 4967</span>
+          <span class="tot-badge tot-badge--outline tot-badge--outline-on-dark">Training Hub</span>
+        </div>
+        <h1 class="tot-hero__title">Code It. Simulate It. See It Work.</h1>
+        <p class="tot-hero__lead">
+          Interactive lessons for Team 4967 students — write real FRC Java code and get
+          immediate feedback from a live simulation, right in your browser. No robot
+          required to start learning.
+        </p>
+        <div class="tot-hero__actions">
+          <a class="tot-btn tot-btn--primary tot-btn--lg" href="#modules">Browse Modules</a>
+          <a class="tot-btn tot-btn--ghost tot-btn--on-dark tot-btn--lg" href="#about">How This Works</a>
+        </div>
+      </div>
+      <div class="tot-photo-slot">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <div class="tot-photo-slot__label">Team 4967 in action</div>
+        <div class="tot-photo-slot__hint">Sharp · full robot · subject facing camera</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tot-section tot-section--surface" id="modules">
+    <div class="tot-container">
+      <div style="max-width:720px;margin-bottom:40px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Training Modules</div>
+          <h2 class="tot-section-heading__title">Pick a topic, write code, watch it move</h2>
+          <p class="tot-section-heading__intro">
+            Every module pairs a short lesson with a code editor and a live simulation —
+            change your code, hit run, and see the result immediately. New modules ship
+            throughout the season.
+          </p>
+        </div>
+      </div>
+
+      <div class="tot-modules-grid" data-tot-modules-grid>
+        <!-- populated by assets/js/render-modules.js from data/modules.js -->
+      </div>
+      <noscript>
+        <ul>
+          <li><a href="modules/template.html?title=Inverse+Kinematics&amp;category=Kinematics">Inverse Kinematics</a></li>
+          <li><a href="modules/template.html?title=Filters&amp;category=Sensors">Filters</a></li>
+          <li><a href="modules/template.html?title=Image+Recognition&amp;category=Vision">Image Recognition</a></li>
+          <li><a href="modules/template.html?title=Mecanum+Drive&amp;category=Drivetrain">Mecanum Drive</a></li>
+          <li><a href="modules/template.html?title=Swerve+Drive&amp;category=Drivetrain">Swerve Drive</a></li>
+          <li><a href="modules/template.html?title=PIDF+Control&amp;category=Controls">PIDF Control</a></li>
+        </ul>
+      </noscript>
+    </div>
+  </section>
+
+  <section class="tot-section tot-section--brand" id="about">
+    <div class="tot-container">
+      <div class="tot-facts__eyebrow">Facts About FIRST®</div>
+      <h2 class="tot-facts__title">Inspiring young people to create innovative solutions through robotics.</h2>
+      <div class="tot-facts__grid">
+        <div class="tot-facts__stat">
+          <div class="tot-stat tot-stat--on-dark">
+            <div class="tot-stat__value">785K+</div>
+            <div class="tot-stat__label">students participated in the 2023-2024 season</div>
+          </div>
+        </div>
+        <div class="tot-facts__stat">
+          <div class="tot-stat tot-stat--on-dark">
+            <div class="tot-stat__value">28</div>
+            <div class="tot-stat__label">countries with FIRST® teams</div>
+          </div>
+        </div>
+        <div class="tot-facts__stat">
+          <div class="tot-stat tot-stat--on-dark">
+            <div class="tot-stat__value">81%</div>
+            <div class="tot-stat__label">of FIRST® alumni declare majors in STEM</div>
+          </div>
+        </div>
+        <div class="tot-facts__stat">
+          <div class="tot-stat tot-stat--on-dark">
+            <div class="tot-stat__value">83%</div>
+            <div class="tot-stat__label">have confidence to take leadership roles in school</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tot-section tot-section--alt" id="build">
+    <div class="tot-container" style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+
+      <div class="tot-card tot-card--pad-lg tot-card--accent">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">For Team 4967 Developers</div>
+          <h2 class="tot-section-heading__title">Want to build the next module?</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 22px;">
+          Every module starts from the same scaffold — a code panel, a simulation canvas,
+          and this site's design tokens. The build guide walks through the whole pattern
+          end to end.
+        </p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <a class="tot-btn tot-btn--primary tot-btn--lg" href="README.md">Read the Build Guide</a>
+          <a class="tot-btn tot-btn--secondary tot-btn--lg" href="modules/template.html">View Template Page</a>
+        </div>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Have An Idea?</div>
+          <h2 class="tot-section-heading__title">Suggest a module</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 22px;">
+          Coach or mentor with an idea for a lesson? Send a note and we'll add it to the
+          roadmap.
+        </p>
+        <form id="suggest-form" data-suggest-form>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="tot-input" style="flex:1;min-width:200px;">
+              <label class="tot-input__label" for="suggest-idea">Module idea</label>
+              <input class="tot-input__field" id="suggest-idea" type="text" placeholder="e.g. Motion Profiling" required>
+            </div>
+            <button class="tot-btn tot-btn--primary" type="submit">Suggest</button>
+          </div>
+        </form>
+        <div id="suggest-thanks" style="display:none;margin-top:14px;padding:16px 18px;background:var(--brand-soft);color:var(--brand-strong);border-radius:var(--radius-md);font-weight:600;font-family:var(--font-heading);letter-spacing:.02em;">
+          ✓ Thanks! Email info@thatoneteam.org with the details and we'll take it from there.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+      <div class="tot-footer__socials">
+        <a class="tot-footer__social" href="https://www.facebook.com/ThatONETeam" aria-label="Facebook" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M14 8h3V4h-3c-2.2 0-4 1.8-4 4v2H7v4h3v6h4v-6h3l1-4h-4V8c0-.6.4-1 1-1z"/></svg>
+        </a>
+        <a class="tot-footer__social" href="https://x.com/team4967" aria-label="X" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h3l-7 8 8 12h-6l-5-7-5 7H0l8-11L0 2h6l4 6 5-6z"/></svg>
+        </a>
+        <a class="tot-footer__social" href="https://www.instagram.com/frc_4967" aria-label="Instagram" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.2"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="index.html">Home</a>
+      <a class="tot-footer__link" href="#modules">Modules</a>
+      <a class="tot-footer__link" href="README.md">Build Guide</a>
+      <a class="tot-footer__link" href="https://www.thatoneteam.org/" target="_blank" rel="noopener">ThatONEteam.org ↗</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="data/modules.js"></script>
+<script src="assets/js/render-modules.js"></script>
+<script src="assets/js/nav.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var form = document.querySelector('[data-suggest-form]');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      form.style.display = 'none';
+      document.getElementById('suggest-thanks').style.display = 'block';
+    });
+  });
+</script>
+</body>
+</html>

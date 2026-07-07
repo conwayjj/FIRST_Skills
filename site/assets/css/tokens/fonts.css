@@ -1,0 +1,30 @@
+/* ============================================================
+   That ONE Team — Web fonts
+   ------------------------------------------------------------
+     • Roboto     → paragraph / body text          (Google Fonts)
+     • Pirulen    → display / headers & short lines (official supplied font)
+     • SquareFont → squared headers & short lines   (official supplied font)
+
+   Pirulen and SquareFont are angular, all-caps techno faces — always
+   used uppercase. Roboto handles all long-form / lowercase reading.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&family=Roboto+Mono:wght@400;500;700&display=swap');
+
+/* Pirulen — official display face */
+@font-face {
+  font-family: 'Pirulen';
+  src: url('../../fonts/Pirulen-Rg.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* SquareFont — official squared heading face */
+@font-face {
+  font-family: 'SquareFont';
+  src: url('../../fonts/Square.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

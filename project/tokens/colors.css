@@ -1,0 +1,67 @@
+/* ============================================================
+   That ONE Team — Color tokens
+   Source: 4967 Brand Style Guide (Official Team Colors)
+   ============================================================ */
+:root {
+  /* ---- Official brand colors (exact, do not alter) ---- */
+  --tot-blue:  #0095C8;   /* Team Blue  — Pantone 639 C */
+  --tot-grey:  #C7C8CA;   /* Team Grey  — Pantone Cool Gray 3 C */
+  --tot-white: #FFFFFF;   /* Team White */
+  --tot-black: #000000;   /* Team Full Black */
+  /* Rich Black is PRINT ONLY (CMYK 60/40/40/100) — never a screen value */
+
+  /* ---- Blue ramp (derived, harmonious) ---- */
+  --blue-900: #003a4e;
+  --blue-800: #005472;
+  --blue-700: #007099;
+  --blue-600: #0095c8;   /* = --tot-blue */
+  --blue-500: #22a6d4;
+  --blue-400: #5cbfe0;
+  --blue-300: #93d6ec;
+  --blue-200: #c4e8f5;
+  --blue-100: #e6f5fb;
+  --blue-050: #f2fafd;
+
+  /* ---- Neutral / grey ramp (derived, harmonious) ---- */
+  --grey-900: #1b1c1d;
+  --grey-800: #3f4041;
+  --grey-700: #5f6062;
+  --grey-600: #808183;
+  --grey-500: #9a9b9d;
+  --grey-400: #b4b5b7;
+  --grey-300: #c7c8ca;   /* = --tot-grey */
+  --grey-200: #dcdddf;
+  --grey-100: #eceded;
+  --grey-050: #f6f7f7;
+
+  /* ---- Support colors (UI states only — kept sparing & on-brand) ---- */
+  --success: #2f9e5b;
+  --warning: #e0a021;
+  --danger:  #d64545;
+
+  /* ============================================================
+     Semantic aliases — reference these in components
+     ============================================================ */
+  --brand:            var(--tot-blue);
+  --brand-strong:     var(--blue-700);
+  --brand-soft:       var(--blue-100);
+  --brand-ink:        var(--tot-white);   /* text/icon on brand fill */
+
+  --text-strong:      var(--grey-900);
+  --text-body:        var(--grey-800);
+  --text-muted:       var(--grey-600);
+  --text-inverse:     var(--tot-white);
+  --text-brand:       var(--tot-blue);
+
+  --surface:          var(--tot-white);
+  --surface-alt:      var(--grey-050);
+  --surface-sunken:   var(--grey-100);
+  --surface-brand:    var(--tot-blue);
+  --surface-dark:     var(--grey-900);
+
+  --border:           var(--grey-200);
+  --border-strong:    var(--grey-300);
+  --border-brand:     var(--tot-blue);
+
+  --focus-ring:       var(--blue-400);
+}

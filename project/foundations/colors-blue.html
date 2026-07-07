@@ -1,0 +1,28 @@
+<!-- @dsCard group="Colors" viewport="700x120" name="Blue Ramp" subtitle="Derived tints & shades of Team Blue for UI depth" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface); }
+  .ramp { display: grid; grid-template-columns: repeat(10, 1fr); border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); }
+  .cell { height: 66px; display: flex; align-items: flex-end; padding: 6px; }
+  .lbl { font-family: var(--font-mono); font-size: 10px; }
+</style>
+</head>
+<body>
+  <div class="ramp">
+    <div class="cell" style="background:var(--blue-050)"><span class="lbl" style="color:#003a4e">050</span></div>
+    <div class="cell" style="background:var(--blue-100)"><span class="lbl" style="color:#003a4e">100</span></div>
+    <div class="cell" style="background:var(--blue-200)"><span class="lbl" style="color:#003a4e">200</span></div>
+    <div class="cell" style="background:var(--blue-300)"><span class="lbl" style="color:#003a4e">300</span></div>
+    <div class="cell" style="background:var(--blue-400)"><span class="lbl" style="color:#fff">400</span></div>
+    <div class="cell" style="background:var(--blue-500)"><span class="lbl" style="color:#fff">500</span></div>
+    <div class="cell" style="background:var(--blue-600)"><span class="lbl" style="color:#fff">600★</span></div>
+    <div class="cell" style="background:var(--blue-700)"><span class="lbl" style="color:#fff">700</span></div>
+    <div class="cell" style="background:var(--blue-800)"><span class="lbl" style="color:#fff">800</span></div>
+    <div class="cell" style="background:var(--blue-900)"><span class="lbl" style="color:#fff">900</span></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!-- @dsCard group="Slides" viewport="1280x720" name="Impact / Stats Slide" subtitle="Blue stat slide for achievements and FIRST facts" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  html,body { margin:0; }
+  .slide { width:1280px; height:720px; background:var(--tot-blue); color:var(--tot-white); font-family:var(--font-body); padding:96px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; }
+  .eyebrow { font-family:var(--font-heading); font-weight:700; font-size:15px; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.85); margin-bottom:16px; }
+  h1 { font-family:var(--font-heading); font-weight:700; font-size:46px; line-height:1.12; margin:0 0 56px; max-width:22ch; }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:36px; }
+  .stat { border-top:3px solid rgba(255,255,255,.45); padding-top:20px; }
+  .num { font-family:var(--font-display); font-weight:800; font-size:64px; line-height:1; letter-spacing:.02em; }
+  .lbl { margin-top:12px; font-size:16px; line-height:1.45; color:rgba(255,255,255,.9); }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="eyebrow">Facts About FIRST®</div>
+  <h1>Inspiring young people to create innovative solutions through robotics.</h1>
+  <div class="grid">
+    <div class="stat"><div class="num">785K+</div><div class="lbl">students in the 2023-2024 season</div></div>
+    <div class="stat"><div class="num">28</div><div class="lbl">countries with FIRST® teams</div></div>
+    <div class="stat"><div class="num">81%</div><div class="lbl">of alumni declare STEM majors</div></div>
+    <div class="stat"><div class="num">83%</div><div class="lbl">gain confidence to lead in school</div></div>
+  </div>
+</div>
+</body>
+</html>

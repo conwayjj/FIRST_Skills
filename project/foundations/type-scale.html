@@ -1,0 +1,26 @@
+<!-- @dsCard group="Type" viewport="700x300" name="Type Scale" subtitle="Display, headings, body & captions at their tokens" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 22px 24px; background: var(--surface); }
+  .r { display: flex; align-items: baseline; gap: 16px; padding: 5px 0; border-bottom: 1px dashed var(--border); }
+  .tag { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); width: 120px; flex: none; }
+  .spec { color: var(--text-strong); white-space: nowrap; }
+  .d { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .04em; }
+  .h { font-family: var(--font-heading); }
+  .b { font-family: var(--font-body); }
+</style>
+</head>
+<body>
+  <div class="r"><span class="tag">--fs-display 72</span><span class="spec d" style="font-size:44px;font-weight:800">4967</span></div>
+  <div class="r"><span class="tag">--fs-h1 48</span><span class="spec h" style="font-size:34px;font-weight:700">Heading One</span></div>
+  <div class="r"><span class="tag">--fs-h2 36</span><span class="spec h" style="font-size:27px;font-weight:600">Heading Two</span></div>
+  <div class="r"><span class="tag">--fs-h3 28</span><span class="spec h" style="font-size:22px;font-weight:500">Heading Three</span></div>
+  <div class="r"><span class="tag">--fs-lg 18</span><span class="spec b" style="font-size:18px">Lead paragraph</span></div>
+  <div class="r"><span class="tag">--fs-body 16</span><span class="spec b" style="font-size:16px">Body copy — Roboto regular</span></div>
+  <div class="r"><span class="tag">--fs-sm 14</span><span class="spec b" style="font-size:14px;color:var(--text-muted)">Small / secondary</span></div>
+</body>
+</html>

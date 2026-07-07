@@ -1,0 +1,49 @@
+<!-- @dsCard group="Components" viewport="700x360" name="Content — Cards, Stats & Headings" subtitle="Content surfaces, stat figures, and section openers" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; padding: 26px; background: var(--surface-alt); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px; }
+  .stats { display: flex; gap: 40px; padding: 20px 24px; background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+  const { Card, StatCard, SectionHeading, Badge, Button } = window.ThatONETeamDesignSystem_a6a028;
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <div>
+      <div style={{marginBottom:'20px'}}>
+        <SectionHeading eyebrow="Join a Team (K-12)" title="Explore and be inspired through STEAM" intro="Our teams are made up of students from grades K-12, and compete as part of FIRST®." />
+      </div>
+      <div className="row">
+        <Card accent interactive>
+          <Badge variant="soft">Grades 9-12</Badge>
+          <h3 style={{fontFamily:'var(--font-heading)',margin:'12px 0 8px'}}>FIRST® Robotics Competition</h3>
+          <p style={{margin:'0 0 16px',color:'var(--text-muted)',fontSize:'14px',lineHeight:1.55}}>Build an industrial-sized robot to play a difficult field game in alliance with other teams.</p>
+          <Button size="sm">Click Here to Learn More</Button>
+        </Card>
+        <Card>
+          <Badge variant="neutral">Grades K-3</Badge>
+          <h3 style={{fontFamily:'var(--font-heading)',margin:'12px 0 8px'}}>FIRST® LEGO® League Explore</h3>
+          <p style={{margin:'0 0 16px',color:'var(--text-muted)',fontSize:'14px',lineHeight:1.55}}>Introduces STEM to children with a yearly themed challenge — a LEGO model and a Show Me Poster.</p>
+          <Button size="sm" variant="secondary">Click Here to Learn More</Button>
+        </Card>
+      </div>
+      <div className="stats">
+        <StatCard value="785K+" label="students participated in 2023-2024" />
+        <StatCard value="28" label="countries with FIRST® teams" />
+        <StatCard value="81%" label="of alumni declare STEM majors" />
+      </div>
+    </div>
+  );
+</script>
+</body>
+</html>

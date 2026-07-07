@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Official Team Colors" subtitle="The four exact brand colors — never alter these values" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; padding: 20px; background: var(--surface); }
+  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .sw { border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border); }
+  .chip { height: 76px; }
+  .meta { padding: 8px 10px; font-family: var(--font-body); }
+  .name { font-family: var(--font-heading); font-weight: 700; font-size: 13px; color: var(--text-strong); }
+  .hex { font-size: 12px; color: var(--text-muted); letter-spacing: .02em; }
+  .pan { font-size: 11px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:#0095C8"></div><div class="meta"><div class="name">Team Blue</div><div class="hex">#0095C8</div><div class="pan">Pantone 639 C</div></div></div>
+    <div class="sw"><div class="chip" style="background:#C7C8CA"></div><div class="meta"><div class="name">Team Grey</div><div class="hex">#C7C8CA</div><div class="pan">Cool Gray 3 C</div></div></div>
+    <div class="sw"><div class="chip" style="background:#FFFFFF"></div><div class="meta"><div class="name">Team White</div><div class="hex">#FFFFFF</div><div class="pan">Pantone White</div></div></div>
+    <div class="sw"><div class="chip" style="background:#000000"></div><div class="meta"><div class="name">Team Black</div><div class="hex">#000000</div><div class="pan">Full Black</div></div></div>
+  </div>
+</body>
+</html>
