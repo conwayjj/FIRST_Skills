@@ -20,7 +20,8 @@ window.TOT_MODULES = [
     title: 'Filters',
     category: 'Sensors',
     summary: 'Smooth noisy sensor data in real time with moving-average, low-pass, and Kalman-style filters before it reaches your control loop.',
-    status: 'coming-soon',
+    status: 'available',
+    href: 'modules/filters.html',
   },
   {
     slug: 'image-recognition',
