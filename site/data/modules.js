@@ -13,7 +13,7 @@ window.TOT_MODULES = [
     category: 'Kinematics',
     summary: 'Work backward from a desired end-effector position to the joint angles that get you there — write a Java step(dt) solver and watch a real inertia-aware arm chase your target.',
     status: 'available',
-    href: 'modules/inverse-kinematics.html',
+    href: 'site/modules/inverse-kinematics.html',
   },
   {
     slug: 'filters',
@@ -21,7 +21,7 @@ window.TOT_MODULES = [
     category: 'Sensors',
     summary: 'Smooth noisy sensor data in real time with moving-average, low-pass, and Kalman-style filters before it reaches your control loop.',
     status: 'available',
-    href: 'modules/filters.html',
+    href: 'site/modules/filters.html',
   },
   {
     slug: 'image-recognition',
