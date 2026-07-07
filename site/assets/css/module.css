@@ -336,6 +336,44 @@ select.tot-select {
 .tot-badge--pulse { animation: tot-pulse 1.2s infinite; }
 @keyframes tot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 
+/* ---------- Mode grid (input-signal / preset picker, e.g. Filters module) ---------- */
+.tot-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tot-mode-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 9px 8px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text-body);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color var(--dur) var(--ease-standard), color var(--dur) var(--ease-standard), background var(--dur) var(--ease-standard);
+}
+.tot-mode-btn:hover { border-color: var(--tot-blue); color: var(--brand-strong); }
+.tot-mode-btn.is-active { background: var(--brand-soft); border-color: var(--tot-blue); color: var(--brand-strong); }
+
+/* ---------- Freehand draw canvas (sketch-your-own input signal) ---------- */
+.tot-draw-canvas {
+  width: 100%;
+  height: 120px;
+  background: var(--grey-050);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: crosshair;
+  touch-action: none;
+  display: block;
+}
+
+/* ---------- Chart legend (trace color key above/around a canvas plot) ---------- */
+.tot-chart-legend { display: flex; gap: 16px; flex-wrap: wrap; }
+.tot-chart-legend__item { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); }
+.tot-chart-legend__swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+/* ---------- Inline checkbox row (e.g. an "auto-apply" toggle) ---------- */
+.tot-checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+.tot-checkbox-row input[type='checkbox'] { accent-color: var(--tot-blue); width: 14px; height: 14px; cursor: pointer; }
+
 @media (max-width: 860px) {
   .tot-workbench { grid-template-columns: 1fr; }
   .tot-telemetry { grid-template-columns: repeat(3, 1fr); }

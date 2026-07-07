@@ -12,24 +12,27 @@ export in [`/project`](../project) and [`/project/readme.md`](../project/readme.
 Treat that folder as the source of truth for anything visual that isn't already
 copied into `assets/css` here.
 
-**Current status:** the start page (`index.html`), the module scaffold
-(`modules/template.html`), and one complete module —
-[`modules/inverse-kinematics.html`](modules/inverse-kinematics.html) — are built.
-The rest of the catalog in `data/modules.js` (Filters, Image Recognition, Mecanum
-Drive, Swerve Drive, PIDF Control) is still "coming soon" — that's the next phase,
-one module at a time, using this README (and Inverse Kinematics as a worked
-example) as the guide.
+**Current status:** the start page (`/index.html`, at the repo root so it's ready
+for GitHub Pages), the module scaffold (`modules/template.html`), and two complete
+modules — [`modules/inverse-kinematics.html`](modules/inverse-kinematics.html) and
+[`modules/filters.html`](modules/filters.html) — are built. The rest of the catalog
+in `data/modules.js` (Image Recognition, Mecanum Drive, Swerve Drive, PIDF Control)
+is still "coming soon" — that's the next phase, one module at a time, using this
+README (and Inverse Kinematics as a worked example) as the guide.
 
 ## Folder structure
 
 ```
+index.html                The hub / start page — hero, module grid, facts, footer
+                          (lives at the repo root so GitHub Pages can serve it)
 site/
-  index.html              The hub / start page — hero, module grid, facts, footer
   README.md               This file
   data/
-    modules.js             The module catalog that drives the card grid on index.html
+    modules.js             The module catalog that drives the card grid on /index.html
   modules/
     template.html           Starting-point scaffold for a new module page (live demo)
+    inverse-kinematics.html  Complete module — worked example to copy from
+    filters.html             Complete module
   assets/
     css/
       tokens/               Copied 1:1 from /project/tokens — do not fork these values
@@ -42,12 +45,16 @@ site/
     img/                    logo-square.png, logo-wide.png
     js/
       nav.js                  Header dropdown / mobile menu behavior
-      render-modules.js        Renders data/modules.js into the index.html card grid
+      render-modules.js        Renders data/modules.js into the /index.html card grid
       module-runtime.js        Shared code-panel + simulation-canvas plumbing
 ```
 
-No bundler, no npm install — open `index.html` in a browser, or serve the folder
-with any static file server (`python3 -m http.server`, GitHub Pages, Netlify, etc.).
+No bundler, no npm install — open the repo-root `index.html` in a browser, or serve
+the repo root with any static file server (`python3 -m http.server`, GitHub Pages,
+Netlify, etc.). Because `index.html` lives at the repo root, enabling GitHub Pages
+for this repo (Settings → Pages → deploy from the default branch, root folder) works
+with no further configuration — all of its asset/script/data references already
+point into `site/...`.
 
 ## Building a new module page
 
@@ -74,7 +81,8 @@ with any static file server (`python3 -m http.server`, GitHub Pages, Netlify, et
    add more columns) to whatever numbers matter for this lesson.
 6. **Register it in the catalog.** In `data/modules.js`, change that module's entry
    from `status: 'coming-soon'` to `status: 'available'` and add
-   `href: 'modules/<slug>.html'`. The hub page picks this up automatically — no
+   `href: 'site/modules/<slug>.html'` (the hrefs are relative to the repo-root
+   `index.html`, not to this folder). The hub page picks this up automatically — no
    other file needs to change.
 7. **Remove the template banner.** Delete the `.tot-callout` "this is a template
    preview" box — that's only for the scaffold itself.

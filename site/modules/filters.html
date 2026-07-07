@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Filters — That ONE Team Training Hub</title>
+<meta name="description" content="Write a Java double filter(double x) method to smooth, differentiate, or clean up noisy sensor signals in real time, then run it against six different input signal generators.">
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/module.css">
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+      </div>
+    </div>
+  </div>
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="../../index.html">
+        <img class="tot-header__logo-img" src="../assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../README.md">Build Guide</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tot-section tot-section--tight tot-section--surface">
+    <div class="tot-container">
+
+      <div class="tot-breadcrumb">
+        <a href="../../index.html">Home</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <a href="../../index.html#modules">Modules</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <span class="tot-breadcrumb__current">Filters</span>
+      </div>
+
+      <div class="tot-module-header">
+        <div class="tot-module-header__badges">
+          <span class="tot-badge tot-badge--soft">Sensors</span>
+          <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
+        </div>
+        <h1 class="tot-module-header__title">Filters</h1>
+        <p class="tot-module-header__lead">
+          Feed a noisy, glitchy, or hand-drawn signal into a small Java method and watch
+          the effect immediately. Implement
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">double filter(double x) { ... return y; }</code>
+          — called once per incoming sample, exactly like a real embedded control loop
+          would call it — and any state you declare above it (a running average, a
+          previous sample, a threshold) persists between calls. Six signal generators
+          are provided, including a Draw It mode so you can sketch pathological inputs
+          by hand.
+        </p>
+      </div>
+
+      <div class="tot-workbench">
+
+        <!-- WORKSPACE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Workspace</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--soft" id="filter-pill">No filter run</span>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+
+            <div style="display:flex;justify-content:flex-end;padding:8px 14px 0;">
+              <span class="tot-chart-legend">
+                <span class="tot-chart-legend__item"><span class="tot-chart-legend__swatch" style="background:var(--tot-blue)"></span>input x[n]</span>
+                <span class="tot-chart-legend__item"><span class="tot-chart-legend__swatch" style="background:var(--warning)"></span>output y[n]</span>
+              </span>
+            </div>
+
+            <div class="tot-sim-canvas-wrap">
+              <canvas id="signal-chart" width="880" height="280" style="width:100%;height:280px;" aria-label="Input and output signal plot"></canvas>
+            </div>
+
+            <div class="tot-metrics-row">
+              <div class="tot-metric-card"><div class="tot-metric-label">N</div><div class="tot-metric-value" id="m-n">64</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Mode</div><div class="tot-metric-value" id="m-mode">Step</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Status</div><div class="tot-metric-value" id="m-status">—</div></div>
+            </div>
+
+            <div class="tot-control-group">
+              <div class="tot-control-heading">Input Signal</div>
+
+              <div class="tot-mode-grid" id="mode-grid">
+                <button class="tot-mode-btn is-active" data-mode="step" type="button">Step</button>
+                <button class="tot-mode-btn" data-mode="impulse" type="button">Impulse</button>
+                <button class="tot-mode-btn" data-mode="ramp" type="button">Noisy Ramp</button>
+                <button class="tot-mode-btn" data-mode="sine" type="button">Sine Wave</button>
+                <button class="tot-mode-btn" data-mode="square" type="button">Square</button>
+                <button class="tot-mode-btn" data-mode="spiky" type="button">Spiky</button>
+                <button class="tot-mode-btn" data-mode="draw" type="button" style="grid-column:1 / -1;">Draw It</button>
+              </div>
+
+              <div class="tot-control-row" style="margin-top:14px;">
+                <span class="tot-control-label">Length (N)</span>
+                <input type="range" class="tot-range" min="16" max="128" step="1" value="64" id="len-slider">
+                <span class="tot-control-value" id="len-val">64</span>
+              </div>
+
+              <div id="param-area"></div>
+
+              <div id="draw-wrap" style="display:none;margin-top:14px;">
+                <p style="font-size:12px;color:var(--text-muted);margin:0 0 8px;line-height:1.5;">
+                  Click / touch and drag across the panel below to sketch x[n]. Release to stop.
+                </p>
+                <canvas class="tot-draw-canvas" id="draw-canvas"></canvas>
+                <button class="tot-btn tot-btn--sm tot-btn--ghost tot-btn--full" id="clear-draw-btn" type="button" style="margin-top:8px;">Clear Drawing</button>
+              </div>
+
+              <button class="tot-btn tot-btn--sm tot-btn--secondary tot-btn--full" id="regen-btn" type="button" style="margin-top:14px;">↻ Regenerate</button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- CODE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Filter Code — Java</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--outline tot-badge--outline-on-dark">filter(x)</span>
+            </div>
+          </div>
+          <div class="tot-code-toolbar">
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="movavg" type="button">Moving Average</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="expo" type="button">Exponential Smoothing</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="diff" type="button">First Difference</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="identity" type="button">Identity</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="outlier" type="button">Outlier Reject</button>
+            <button class="tot-btn tot-btn--sm tot-btn--primary" id="run-btn" type="button" style="margin-left:auto;">▶ Run Filter</button>
+          </div>
+          <div class="tot-panel__body">
+            <textarea class="tot-code-editor" id="code-editor" spellcheck="false"></textarea>
+            <div class="tot-checkbox-row" style="padding:8px 16px;border-top:1px solid var(--border);background:var(--surface-alt);">
+              <input type="checkbox" id="auto-apply" checked>
+              <label for="auto-apply">re-run automatically when the input signal changes</label>
+            </div>
+            <div class="tot-console" id="console-output">
+              <div class="tot-console__line--info">// filter(x) is called once per input sample, in order.</div>
+              <div class="tot-console__line--info">// Declare state variables above filter(x) — they persist between calls.</div>
+              <div class="tot-console__line--info">// Click an example above, or write your own, then press Run Filter.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Objective</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Shape the output trace</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 0;">
+          Start from Moving Average on the Step signal and watch how a 3-tap FIR blurs a
+          sharp edge. Switch to Spiky and try Outlier Reject to see rejection versus
+          smoothing tradeoffs. Then write your own — a filter is just a function of the
+          current sample plus whatever state you choose to remember. The signal
+          generators (including a hand-drawn one) let you stress-test a filter against
+          the same kinds of noise, glitches, and edges a real sensor produces.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Reference</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">filter(x) API</h2>
+        </div>
+        <dl class="tot-reference-grid">
+          <dt>filter(x)</dt><dd>The method you implement; called once per input sample n, in order. Return the output y[n].</dd>
+          <dt>state fields</dt><dd>Variables declared above filter(x) (e.g. double prevY = 0;) persist between calls, the same way instance fields would in a real embedded loop.</dd>
+          <dt>Run Filter</dt><dd>Recompiles filter(x) and re-runs it across every sample in the current input signal.</dd>
+          <dt>auto-apply</dt><dd>When checked, automatically re-runs your last-compiled filter whenever the input signal changes.</dd>
+          <dt>N</dt><dd>Number of samples in the window (Length slider), 16–128.</dd>
+          <dt>Draw It</dt><dd>Click/drag on the small canvas to sketch x[n] by hand instead of using a generator.</dd>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="../assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="../../index.html">Home</a>
+      <a class="tot-footer__link" href="../../index.html#modules">Modules</a>
+      <a class="tot-footer__link" href="../README.md">Build Guide</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="../assets/js/nav.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ─────────────────────────────────────────────────────────────
+  //  STATE
+  // ─────────────────────────────────────────────────────────────
+  let mode = "step";
+  let N = 64;
+  let inputData = [];
+  let outputData = null;
+  let filterHasRun = false;
+  let drawPoints = null; // array of length N, values in [-1,1]
+  let params = { stepIndex: 20, impulseIndex: 10, noise: 0.08, cycles: 4, squareCycles: 3, spikeChance: 0.08 };
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  // ─────────────────────────────────────────────────────────────
+  //  SIGNAL GENERATORS
+  // ─────────────────────────────────────────────────────────────
+  function genStep(n, idx) { const a = []; for (let i = 0; i < n; i++) a.push(i < idx ? 0 : 1); return a; }
+  function genImpulse(n, idx) { const a = []; for (let i = 0; i < n; i++) a.push(i === idx ? 1 : 0); return a; }
+  function genRamp(n, noise) { const a = []; for (let i = 0; i < n; i++) a.push(i / (n - 1) + (Math.random() * 2 - 1) * noise); return a; }
+  function genSine(n, cycles, noise) { const a = []; for (let i = 0; i < n; i++) a.push(Math.sin(2 * Math.PI * cycles * i / n) + (Math.random() * 2 - 1) * noise); return a; }
+  function genSquare(n, cycles) { const a = []; for (let i = 0; i < n; i++) { const v = Math.sin(2 * Math.PI * cycles * i / n) >= 0 ? 1 : -1; a.push(v); } return a; }
+  function genSpiky(n, cycles, spikeChance) {
+    const a = [];
+    for (let i = 0; i < n; i++) {
+      let v = Math.sin(2 * Math.PI * cycles * i / n);
+      if (Math.random() < spikeChance) v += (Math.random() < 0.5 ? -1 : 1) * (1.5 + Math.random() * 1.5);
+      a.push(v);
+    }
+    return a;
+  }
+  function genDraw(n) {
+    if (!drawPoints || drawPoints.length !== n) drawPoints = new Array(n).fill(0);
+    return drawPoints.slice();
+  }
+
+  function regenerateInput() {
+    switch (mode) {
+      case "step": inputData = genStep(N, params.stepIndex); break;
+      case "impulse": inputData = genImpulse(N, params.impulseIndex); break;
+      case "ramp": inputData = genRamp(N, params.noise); break;
+      case "sine": inputData = genSine(N, params.cycles, params.noise); break;
+      case "square": inputData = genSquare(N, params.squareCycles); break;
+      case "spiky": inputData = genSpiky(N, params.cycles, params.spikeChance); break;
+      case "draw": inputData = genDraw(N); break;
+    }
+    onInputChanged();
+  }
+
+  function onInputChanged() {
+    drawScope();
+    updateMetrics();
+    if (document.getElementById('auto-apply').checked && filterHasRun) runFilter(true);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  JAVA -> JS TRANSPILER (constrained subset used by filter(x))
+  // ─────────────────────────────────────────────────────────────
+  function transpileBody(body) {
+    let b = body;
+    b = b.replace(/for\s*\(\s*(double|int|float|long)\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $2 of $3)');
+    b = b.replace(/new\s+(double|int|float|long)\s*\[([^\]]+)\]/g, 'new Array($2).fill(0)');
+    b = b.replace(/\b(double|int|float|long)\s*\[\s*\]\s*(\w+)\s*=/g, 'let $2 =');
+    b = b.replace(/\b(double|int|float|long)\s*\[\s*\]\s*(\w+)\s*;/g, 'let $2;');
+    b = b.replace(/\b(double|int|float|long|boolean)\s+(\w+)\s*=/g, 'let $2 =');
+    b = b.replace(/\b(double|int|float|long|boolean)\s+(\w+)\s*;/g, 'let $2;');
+    b = b.replace(/\(\s*int\s*\)\s*/g, '');
+    b = b.replace(/\(\s*double\s*\)\s*/g, '');
+    return b;
+  }
+
+  // Builds a stateful filter closure from student code shaped like:
+  //   double someState = 0;              <- persists between calls
+  //   double filter(double x) { ... return y; }
+  // Mirrors the "new Function(...)" pattern used by the IK module's
+  // compileAndRun() — see /site/README.md, "Executing student code."
+  function transpileAndBuild(javaCode) {
+    const sigRegex = /double\s+(\w+)\s*\(\s*double\s+(\w+)\s*\)\s*\{/;
+    const sigMatch = javaCode.match(sigRegex);
+    if (!sigMatch) throw new Error("Couldn't find a method matching:  double filter(double x) { ... }");
+    const paramName = sigMatch[2];
+    const startIdx = sigMatch.index + sigMatch[0].length;
+    let depth = 1, i = startIdx;
+    for (; i < javaCode.length; i++) {
+      if (javaCode[i] === '{') depth++;
+      else if (javaCode[i] === '}') { depth--; if (depth === 0) break; }
+    }
+    if (depth !== 0) throw new Error("Mismatched braces — check that every { has a matching }.");
+    const preamble = javaCode.slice(0, sigMatch.index);
+    const rawBody = javaCode.slice(startIdx, i);
+    const jsPreamble = transpileBody(preamble);
+    const jsBody = transpileBody(rawBody);
+    const factory = new Function(
+      '"use strict";\n' + jsPreamble +
+      '\nreturn function(' + paramName + '){\n' + jsBody + '\n};'
+    );
+    return factory();
+  }
+
+  function runFilter(silent) {
+    const code = document.getElementById('code-editor').value;
+    try {
+      const filterFn = transpileAndBuild(code);
+      if (typeof filterFn !== 'function') throw new Error("Couldn't find a method matching:  double filter(double x) { ... }");
+      const result = inputData.map(x => filterFn(x));
+      outputData = result.map(v => (typeof v === 'number' && isFinite(v)) ? v : 0);
+      filterHasRun = true;
+      if (!silent) {
+        clearOutput();
+        addOutput('✓ ran successfully — ' + outputData.length + ' samples, one filter() call each', 'ok');
+      }
+      setPill('ok', 'Filter Active');
+      drawScope();
+      updateMetrics();
+    } catch (err) {
+      if (!silent) {
+        clearOutput();
+        addOutput('✗ error: ' + err.message, 'error');
+      }
+      setPill('error', 'Error');
+    }
+  }
+
+  function setPill(state, label) {
+    const el = document.getElementById('filter-pill');
+    el.textContent = label;
+    el.className = 'tot-badge ' + (state === 'ok' ? 'tot-badge--success' : state === 'error' ? 'tot-badge--warning' : 'tot-badge--soft');
+  }
+
+  function addOutput(text, cls) {
+    const consoleEl = document.getElementById('console-output');
+    const d = document.createElement('div');
+    d.className = cls ? 'tot-console__line--' + cls : '';
+    d.textContent = text;
+    consoleEl.appendChild(d);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+  function clearOutput() { document.getElementById('console-output').innerHTML = ''; }
+
+  // ─────────────────────────────────────────────────────────────
+  //  EXAMPLE FILTERS
+  // ─────────────────────────────────────────────────────────────
+  const examples = {
+    movavg:
+`// 3-tap moving average (low-pass FIR)
+// state: the last two samples we've seen
+double x1 = 0;
+double x2 = 0;
+
+double filter(double x) {
+    double y = (x + x1 + x2) / 3.0;
+    x2 = x1;
+    x1 = x;
+    return y;
+}`,
+    expo:
+`// exponential smoothing (1st-order IIR low-pass)
+// state: the previous output sample
+double prevY = 0;
+boolean started = false;
+
+double filter(double x) {
+    double alpha = 0.25;
+    if (!started) {
+        prevY = x;
+        started = true;
+        return prevY;
+    }
+    double y = alpha * x + (1 - alpha) * prevY;
+    prevY = y;
+    return y;
+}`,
+    diff:
+`// first difference (high-pass / edge detector)
+// state: the previous input sample
+double prevX = 0;
+boolean started = false;
+
+double filter(double x) {
+    double y;
+    if (!started) {
+        y = 0;
+        started = true;
+    } else {
+        y = x - prevX;
+    }
+    prevX = x;
+    return y;
+}`,
+    identity:
+`// pass-through — no state needed
+
+double filter(double x) {
+    return x;
+}`,
+    outlier:
+`// outlier rejection — throws out any sample that jumps too far
+// from the last accepted value, and holds that value instead
+double threshold = 0.5;   // <- tune this: max allowed jump between samples
+double lastGood = 0;
+boolean started = false;
+
+double filter(double x) {
+    if (!started) {
+        lastGood = x;
+        started = true;
+        return lastGood;
+    }
+    if (Math.abs(x - lastGood) > threshold) {
+        // outlier — discard it, hold the last accepted value
+        return lastGood;
+    }
+    lastGood = x;
+    return lastGood;
+}`
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  //  SCOPE (hand-drawn line chart — no external charting library,
+  //  matching the plain-canvas approach used by the IK module)
+  // ─────────────────────────────────────────────────────────────
+  const chartCanvas = document.getElementById('signal-chart');
+  const chartCtx = chartCanvas.getContext('2d');
+
+  function resizeChartCanvas() {
+    const rect = chartCanvas.getBoundingClientRect();
+    chartCanvas.width = rect.width * devicePixelRatio;
+    chartCanvas.height = rect.height * devicePixelRatio;
+    chartCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    drawScope();
+  }
+
+  function drawScope() {
+    const w = chartCanvas.clientWidth, h = chartCanvas.clientHeight;
+    const ctx = chartCtx;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = css('--grey-050');
+    ctx.fillRect(0, 0, w, h);
+    if (!inputData.length) return;
+
+    const allVals = outputData ? inputData.concat(outputData) : inputData.slice();
+    let lo = Math.min(0, ...allVals), hi = Math.max(0, ...allVals);
+    if (lo === hi) { lo -= 1; hi += 1; }
+    const pad = (hi - lo) * 0.12;
+    lo -= pad; hi += pad;
+
+    const margin = { left: 38, right: 12, top: 12, bottom: 20 };
+    const plotW = Math.max(1, w - margin.left - margin.right);
+    const plotH = Math.max(1, h - margin.top - margin.bottom);
+    const xFor = i => margin.left + (i / Math.max(1, inputData.length - 1)) * plotW;
+    const yFor = v => margin.top + plotH - ((v - lo) / (hi - lo)) * plotH;
+
+    // gridlines + y labels
+    ctx.strokeStyle = css('--border');
+    ctx.lineWidth = 1;
+    ctx.font = '10px ' + css('--font-mono');
+    ctx.fillStyle = css('--text-muted');
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const gridLines = 4;
+    for (let g = 0; g <= gridLines; g++) {
+      const v = lo + (hi - lo) * g / gridLines;
+      const y = yFor(v);
+      ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(w - margin.right, y); ctx.stroke();
+      ctx.fillText(v.toFixed(2), margin.left - 6, y);
+    }
+    // zero line, emphasized
+    if (lo < 0 && hi > 0) {
+      ctx.strokeStyle = css('--border-strong');
+      const y0 = yFor(0);
+      ctx.beginPath(); ctx.moveTo(margin.left, y0); ctx.lineTo(w - margin.right, y0); ctx.stroke();
+    }
+    // x-axis ticks (n)
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const xTicks = 8;
+    for (let t = 0; t <= xTicks; t++) {
+      const idx = Math.round((inputData.length - 1) * t / xTicks);
+      const x = xFor(idx);
+      ctx.fillText(String(idx), x, h - margin.bottom + 4);
+    }
+
+    function drawTrace(data, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const x = xFor(i), y = yFor(data[i]);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    drawTrace(inputData, css('--tot-blue'));
+    if (outputData) drawTrace(outputData, css('--warning'));
+  }
+
+  function updateMetrics() {
+    document.getElementById('m-n').textContent = N;
+    const modeNames = { step: 'Step', impulse: 'Impulse', ramp: 'Noisy Ramp', sine: 'Sine Wave', square: 'Square', spiky: 'Spiky', draw: 'Draw It' };
+    document.getElementById('m-mode').textContent = modeNames[mode] || mode;
+    document.getElementById('m-status').textContent = filterHasRun ? (outputData ? 'ran' : '—') : 'not run';
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  PARAM UI (per input-signal mode)
+  // ─────────────────────────────────────────────────────────────
+  const paramArea = document.getElementById('param-area');
+
+  function renderParams() {
+    paramArea.innerHTML = '';
+    document.getElementById('draw-wrap').style.display = (mode === 'draw') ? 'block' : 'none';
+
+    if (mode === 'step') {
+      addSlider('Step at n =', 0, N - 1, params.stepIndex, v => { params.stepIndex = v; regenerateInput(); });
+    } else if (mode === 'impulse') {
+      addSlider('Impulse at n =', 0, N - 1, params.impulseIndex, v => { params.impulseIndex = v; regenerateInput(); });
+    } else if (mode === 'ramp') {
+      addSlider('Noise amount', 0, 0.5, params.noise, v => { params.noise = v; regenerateInput(); }, 0.01);
+    } else if (mode === 'sine') {
+      addSlider('Cycles / window', 1, 12, params.cycles, v => { params.cycles = v; regenerateInput(); });
+      addSlider('Noise amount', 0, 0.5, params.noise, v => { params.noise = v; regenerateInput(); }, 0.01);
+    } else if (mode === 'square') {
+      addSlider('Cycles / window', 1, 8, params.squareCycles, v => { params.squareCycles = v; regenerateInput(); });
+    } else if (mode === 'spiky') {
+      addSlider('Cycles / window', 1, 12, params.cycles, v => { params.cycles = v; regenerateInput(); });
+      addSlider('Spike chance', 0, 0.3, params.spikeChance, v => { params.spikeChance = v; regenerateInput(); }, 0.01);
+    }
+  }
+
+  function addSlider(labelText, min, max, value, onChange, step) {
+    step = step || 1;
+    const row = document.createElement('div');
+    row.className = 'tot-control-row';
+    row.style.marginTop = '10px';
+    const label = document.createElement('span');
+    label.className = 'tot-control-label';
+    label.textContent = labelText;
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.className = 'tot-range';
+    input.min = min; input.max = max; input.step = step; input.value = value;
+    const valSpan = document.createElement('span');
+    valSpan.className = 'tot-control-value';
+    valSpan.textContent = formatVal(value, step);
+    input.addEventListener('input', () => {
+      const v = parseFloat(input.value);
+      valSpan.textContent = formatVal(v, step);
+      onChange(v);
+    });
+    row.appendChild(label); row.appendChild(input); row.appendChild(valSpan);
+    paramArea.appendChild(row);
+  }
+  function formatVal(v, step) { return step < 1 ? v.toFixed(2) : String(Math.round(v)); }
+
+  // ─────────────────────────────────────────────────────────────
+  //  DRAW CANVAS ("Draw It" mode)
+  // ─────────────────────────────────────────────────────────────
+  const drawCanvas = document.getElementById('draw-canvas');
+  const dctx = drawCanvas.getContext('2d');
+  let isDrawing = false, lastIdx = null;
+
+  function resizeDrawCanvas() {
+    const rect = drawCanvas.getBoundingClientRect();
+    drawCanvas.width = rect.width * devicePixelRatio;
+    drawCanvas.height = rect.height * devicePixelRatio;
+    dctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    renderDrawCanvas();
+  }
+
+  function renderDrawCanvas() {
+    const w = drawCanvas.clientWidth, h = drawCanvas.clientHeight;
+    dctx.clearRect(0, 0, w, h);
+    dctx.strokeStyle = css('--border');
+    dctx.lineWidth = 1;
+    dctx.beginPath(); dctx.moveTo(0, h / 2); dctx.lineTo(w, h / 2); dctx.stroke();
+    if (!drawPoints) return;
+    dctx.strokeStyle = css('--tot-blue');
+    dctx.lineWidth = 2;
+    dctx.beginPath();
+    for (let i = 0; i < drawPoints.length; i++) {
+      const x = (i / (drawPoints.length - 1)) * w;
+      const y = h / 2 - drawPoints[i] * (h / 2 - 6);
+      if (i === 0) dctx.moveTo(x, y); else dctx.lineTo(x, y);
+    }
+    dctx.stroke();
+  }
+
+  function pointerToSample(clientX, clientY) {
+    const rect = drawCanvas.getBoundingClientRect();
+    const x = clientX - rect.left, y = clientY - rect.top;
+    const idx = Math.round((x / rect.width) * (N - 1));
+    const val = -((y - rect.height / 2) / (rect.height / 2 - 6));
+    return { idx: Math.max(0, Math.min(N - 1, idx)), val: Math.max(-1, Math.min(1, val)) };
+  }
+
+  function setDrawSample(idx, val) {
+    if (!drawPoints || drawPoints.length !== N) drawPoints = new Array(N).fill(0);
+    drawPoints[idx] = val;
+  }
+
+  function getEventPoint(e) {
+    if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  function handleDrawStart(e) {
+    if (mode !== 'draw') return;
+    isDrawing = true;
+    const p = getEventPoint(e);
+    const s = pointerToSample(p.x, p.y);
+    setDrawSample(s.idx, s.val);
+    lastIdx = s.idx;
+    renderDrawCanvas();
+    inputData = drawPoints.slice();
+    drawScope(); updateMetrics();
+    e.preventDefault();
+  }
+  function handleDrawMove(e) {
+    if (!isDrawing || mode !== 'draw') return;
+    const p = getEventPoint(e);
+    const s = pointerToSample(p.x, p.y);
+    if (lastIdx !== null && lastIdx !== s.idx) {
+      const dir = s.idx > lastIdx ? 1 : -1;
+      for (let i = lastIdx; i !== s.idx; i += dir) {
+        const t = (i - lastIdx) / (s.idx - lastIdx);
+        setDrawSample(i, drawPoints[lastIdx] + (s.val - drawPoints[lastIdx]) * t);
+      }
+    }
+    setDrawSample(s.idx, s.val);
+    lastIdx = s.idx;
+    renderDrawCanvas();
+    inputData = drawPoints.slice();
+    drawScope(); updateMetrics();
+    e.preventDefault();
+  }
+  function handleDrawEnd() {
+    if (!isDrawing) return;
+    isDrawing = false; lastIdx = null;
+    onInputChanged();
+  }
+
+  drawCanvas.addEventListener('mousedown', handleDrawStart);
+  drawCanvas.addEventListener('mousemove', handleDrawMove);
+  window.addEventListener('mouseup', handleDrawEnd);
+  drawCanvas.addEventListener('touchstart', handleDrawStart, { passive: false });
+  drawCanvas.addEventListener('touchmove', handleDrawMove, { passive: false });
+  drawCanvas.addEventListener('touchend', handleDrawEnd);
+
+  document.getElementById('clear-draw-btn').addEventListener('click', () => {
+    drawPoints = new Array(N).fill(0);
+    renderDrawCanvas();
+    regenerateInput();
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  //  WIRING
+  // ─────────────────────────────────────────────────────────────
+  document.getElementById('mode-grid').addEventListener('click', (e) => {
+    const btn = e.target.closest('.tot-mode-btn');
+    if (!btn) return;
+    document.querySelectorAll('.tot-mode-btn').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    mode = btn.dataset.mode;
+    renderParams();
+    if (mode === 'draw') resizeDrawCanvas();
+    regenerateInput();
+  });
+
+  const lenSlider = document.getElementById('len-slider');
+  const lenVal = document.getElementById('len-val');
+  lenSlider.addEventListener('input', () => {
+    N = parseInt(lenSlider.value, 10);
+    lenVal.textContent = N;
+    params.stepIndex = Math.min(params.stepIndex, N - 1);
+    params.impulseIndex = Math.min(params.impulseIndex, N - 1);
+    drawPoints = null;
+    renderParams();
+    if (mode === 'draw') resizeDrawCanvas();
+    regenerateInput();
+  });
+
+  document.getElementById('regen-btn').addEventListener('click', regenerateInput);
+  document.getElementById('run-btn').addEventListener('click', () => runFilter(false));
+
+  document.querySelectorAll('.tot-code-toolbar [data-ex]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('code-editor').value = examples[btn.dataset.ex];
+      runFilter(false);
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    resizeChartCanvas();
+    if (mode === 'draw') resizeDrawCanvas();
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  //  INIT
+  // ─────────────────────────────────────────────────────────────
+  document.getElementById('code-editor').value = examples.movavg;
+  resizeChartCanvas();
+  resizeDrawCanvas();
+  renderParams();
+  regenerateInput();
+  runFilter(false);
+})();
+</script>
+</body>
+</html>

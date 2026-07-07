@@ -10,7 +10,7 @@
   function cardHref(mod) {
     if (mod.status === 'available' && mod.href) return mod.href;
     var params = new URLSearchParams({ title: mod.title, category: mod.category });
-    return 'modules/template.html?' + params.toString();
+    return 'site/modules/template.html?' + params.toString();
   }
 
   function renderCard(mod) {

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>That ONE Team — Training Hub</title>
 <meta name="description" content="Team 4967's interactive FRC training hub — write real Java code and see it control a live simulation, module by module.">
-<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="site/assets/css/main.css">
 </head>
 <body>
 
@@ -33,7 +33,7 @@
   <div class="tot-header__bar">
     <div class="tot-header__bar-inner">
       <a class="tot-header__logo" href="index.html">
-        <img class="tot-header__logo-img" src="assets/img/logo-square.png" alt="That ONE Team">
+        <img class="tot-header__logo-img" src="site/assets/img/logo-square.png" alt="That ONE Team">
         <span class="tot-header__logo-text">Training Hub</span>
       </a>
 
@@ -95,16 +95,16 @@
       </div>
 
       <div class="tot-modules-grid" data-tot-modules-grid>
-        <!-- populated by assets/js/render-modules.js from data/modules.js -->
+        <!-- populated by site/assets/js/render-modules.js from site/data/modules.js -->
       </div>
       <noscript>
         <ul>
-          <li><a href="modules/template.html?title=Inverse+Kinematics&amp;category=Kinematics">Inverse Kinematics</a></li>
-          <li><a href="modules/template.html?title=Filters&amp;category=Sensors">Filters</a></li>
-          <li><a href="modules/template.html?title=Image+Recognition&amp;category=Vision">Image Recognition</a></li>
-          <li><a href="modules/template.html?title=Mecanum+Drive&amp;category=Drivetrain">Mecanum Drive</a></li>
-          <li><a href="modules/template.html?title=Swerve+Drive&amp;category=Drivetrain">Swerve Drive</a></li>
-          <li><a href="modules/template.html?title=PIDF+Control&amp;category=Controls">PIDF Control</a></li>
+          <li><a href="site/modules/template.html?title=Inverse+Kinematics&amp;category=Kinematics">Inverse Kinematics</a></li>
+          <li><a href="site/modules/template.html?title=Filters&amp;category=Sensors">Filters</a></li>
+          <li><a href="site/modules/template.html?title=Image+Recognition&amp;category=Vision">Image Recognition</a></li>
+          <li><a href="site/modules/template.html?title=Mecanum+Drive&amp;category=Drivetrain">Mecanum Drive</a></li>
+          <li><a href="site/modules/template.html?title=Swerve+Drive&amp;category=Drivetrain">Swerve Drive</a></li>
+          <li><a href="site/modules/template.html?title=PIDF+Control&amp;category=Controls">PIDF Control</a></li>
         </ul>
       </noscript>
     </div>
@@ -157,8 +157,8 @@
           end to end.
         </p>
         <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <a class="tot-btn tot-btn--primary tot-btn--lg" href="README.md">Read the Build Guide</a>
-          <a class="tot-btn tot-btn--secondary tot-btn--lg" href="modules/template.html">View Template Page</a>
+          <a class="tot-btn tot-btn--primary tot-btn--lg" href="site/README.md">Read the Build Guide</a>
+          <a class="tot-btn tot-btn--secondary tot-btn--lg" href="site/modules/template.html">View Template Page</a>
         </div>
       </div>
 
@@ -193,7 +193,7 @@
 <footer class="tot-footer">
   <div class="tot-footer__grid">
     <div>
-      <img class="tot-footer__logo" src="assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <img class="tot-footer__logo" src="site/assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
       <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
       <div class="tot-footer__socials">
         <a class="tot-footer__social" href="https://www.facebook.com/ThatONETeam" aria-label="Facebook" target="_blank" rel="noopener">
@@ -217,7 +217,7 @@
       <div class="tot-footer__heading">Explore</div>
       <a class="tot-footer__link" href="index.html">Home</a>
       <a class="tot-footer__link" href="#modules">Modules</a>
-      <a class="tot-footer__link" href="README.md">Build Guide</a>
+      <a class="tot-footer__link" href="site/README.md">Build Guide</a>
       <a class="tot-footer__link" href="https://www.thatoneteam.org/" target="_blank" rel="noopener">ThatONEteam.org ↗</a>
     </div>
   </div>
@@ -226,9 +226,9 @@
   </div>
 </footer>
 
-<script src="data/modules.js"></script>
-<script src="assets/js/render-modules.js"></script>
-<script src="assets/js/nav.js"></script>
+<script src="site/data/modules.js"></script>
+<script src="site/assets/js/render-modules.js"></script>
+<script src="site/assets/js/nav.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     var form = document.querySelector('[data-suggest-form]');
