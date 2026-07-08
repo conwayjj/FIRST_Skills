@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image Recognition — That ONE Team Training Hub</title>
+<meta name="description" content="Write a Java void scan() method to pull targeting data out of a pixelated camera frame — hue/saturation color-blob detection and AprilTag-style fiducial IDs.">
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/module.css">
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+      </div>
+    </div>
+  </div>
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="../../index.html">
+        <img class="tot-header__logo-img" src="../assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../README.md">Build Guide</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tot-section tot-section--tight tot-section--surface">
+    <div class="tot-container">
+
+      <div class="tot-breadcrumb">
+        <a href="../../index.html">Home</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <a href="../../index.html#modules">Modules</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <span class="tot-breadcrumb__current">Image Recognition</span>
+      </div>
+
+      <div class="tot-module-header">
+        <div class="tot-module-header__badges">
+          <span class="tot-badge tot-badge--soft">Vision</span>
+          <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
+        </div>
+        <h1 class="tot-module-header__title">Image Recognition</h1>
+        <p class="tot-module-header__lead">
+          A simulated camera hands you a low-resolution grid of pixels — some carrying a
+          hue/saturation/value color, some carrying a fiducial (AprilTag-style) ID. Write a Java
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">void scan() { ... }</code>
+          that walks the frame pixel-by-pixel and calls <code style="font-family:var(--font-mono);">report(...)</code>
+          with the targeting data your robot would act on — exactly the kind of loop a real
+          vision co-processor runs every frame.
+        </p>
+      </div>
+
+      <div class="tot-workbench">
+
+        <!-- WORKSPACE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Camera Frame</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--soft" id="sim-pill">No scan yet</span>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+            <div class="tot-sim-canvas-wrap">
+              <canvas id="frame-canvas" width="480" height="360" aria-label="Simulated camera frame"></canvas>
+            </div>
+            <div class="tot-hint-text" id="frame-hint">Press "Run Scan" to execute your scan() against the current frame.</div>
+
+            <div class="tot-metrics-row">
+              <div class="tot-metric-card"><div class="tot-metric-label">Mode</div><div class="tot-metric-value" id="m-mode">Color Blob</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Reported</div><div class="tot-metric-value" id="m-reported">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Error</div><div class="tot-metric-value" id="m-err">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Status</div><div class="tot-metric-value" id="m-status">—</div></div>
+            </div>
+
+            <div class="tot-control-group">
+              <div class="tot-control-heading">Frame Type</div>
+              <div class="tot-mode-grid" id="mode-grid">
+                <button class="tot-mode-btn is-active" data-mode="blob" type="button">Color Blob</button>
+                <button class="tot-mode-btn" data-mode="tag" type="button">AprilTag</button>
+              </div>
+
+              <div id="blob-controls">
+                <div class="tot-control-heading">Target Color</div>
+                <div class="tot-control-row">
+                  <span class="tot-control-label">Track</span>
+                  <select class="tot-select" id="color-select">
+                    <option value="8">Red Cube</option>
+                    <option value="48" selected>Yellow Cone</option>
+                    <option value="206">Blue Ball</option>
+                    <option value="132">Green Marker</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="tot-control-heading">Scene</div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Clutter</span>
+                <input type="range" class="tot-range" min="0" max="5" step="1" value="2" id="clutter-slider">
+                <span class="tot-control-value" id="clutter-val">2</span>
+              </div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Vignette</span>
+                <input type="range" class="tot-range" min="0" max="0.8" step="0.05" value="0.3" id="vignette-slider">
+                <span class="tot-control-value" id="vignette-val">0.30</span>
+              </div>
+              <button class="tot-btn tot-btn--sm tot-btn--secondary tot-btn--full" id="regen-btn" type="button" style="margin-top:6px;">↻ New Frame</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CODE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Vision Code — Java</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--outline tot-badge--outline-on-dark">scan()</span>
+            </div>
+          </div>
+          <div class="tot-code-toolbar">
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="blob" type="button">Blob Centroid</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="robust" type="button">Robust Blob</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="tag" type="button">AprilTag Scan</button>
+            <button class="tot-btn tot-btn--sm tot-btn--primary" id="run-btn" type="button" style="margin-left:auto;">▶ Run Scan</button>
+          </div>
+          <div class="tot-panel__body">
+            <textarea class="tot-code-editor" id="code-editor" spellcheck="false"></textarea>
+            <div class="tot-console" id="console-output">
+              <div class="tot-console__line--info">// scan() runs once per click of "Run Scan" against the current frame.</div>
+              <div class="tot-console__line--info">// Read pixels with getHue/getSat/getVal/getTagId, then call report(...).</div>
+              <div class="tot-console__line--info">// Click an example above, or write your own, then press Run Scan.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Objective</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Turn pixels into targeting data</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 0;">
+          In <strong>Color Blob</strong> mode, every pixel carries a hue (0–360°) and a saturation
+          (0–1); the target object is the region whose hue sits near <code style="font-family:var(--font-mono);">targetHue</code>
+          with high saturation, while background and lighting only vary in brightness
+          (<code style="font-family:var(--font-mono);">getVal</code>) — a correct detector should
+          ignore brightness entirely. Hue also wraps at 360°, so red (near 0°) needs a
+          wrap-aware distance check. A stray noisy pixel or two shouldn't be enough to report a
+          detection — that's what the <strong>Robust Blob</strong> example's minimum pixel count
+          guards against. In <strong>AprilTag</strong> mode, tags hand you a stable integer ID
+          directly through <code style="font-family:var(--font-mono);">getTagId(x, y)</code> — no
+          color math needed, just averaging the pixels that share an ID. Switch modes, add
+          clutter, and see how your <code style="font-family:var(--font-mono);">scan()</code>
+          holds up.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Reference</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">scan() API</h2>
+        </div>
+        <dl class="tot-reference-grid">
+          <dt>width, height</dt><dd>Frame dimensions in pixels — loop 0..width-1 and 0..height-1.</dd>
+          <dt>getHue(x, y)</dt><dd>Hue at pixel (x, y), 0–360°. Meaningless on low-saturation (gray) pixels.</dd>
+          <dt>getSat(x, y)</dt><dd>Saturation at pixel (x, y), 0 (gray) to 1 (vivid color).</dd>
+          <dt>getVal(x, y)</dt><dd>Brightness at pixel (x, y), 0–1 — varies with lighting/vignette, ignore for color matching.</dd>
+          <dt>getTagId(x, y)</dt><dd>Fiducial ID at pixel (x, y), or -1 if this pixel isn't part of a tag.</dd>
+          <dt>targetHue</dt><dd>The hue (0–360°) of the color currently selected in "Track."</dd>
+          <dt>report(cx, cy, count)</dt><dd>Report a color-blob detection: centroid pixel coordinates and matched pixel count.</dd>
+          <dt>reportTag(id, cx, cy)</dt><dd>Report a tag detection: its ID and centroid pixel coordinates.</dd>
+          <dt>println(...)</dt><dd>Write a line to the console panel below the editor.</dd>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="../assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="../../index.html">Home</a>
+      <a class="tot-footer__link" href="../../index.html#modules">Modules</a>
+      <a class="tot-footer__link" href="../README.md">Build Guide</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="../assets/js/nav.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ─────────────────────────────────────────────────────────────
+  //  CONFIG / STATE
+  // ─────────────────────────────────────────────────────────────
+  const GRID_W = 32, GRID_H = 24, CELL = 15;
+  const canvas = document.getElementById('frame-canvas');
+  const ctx = canvas.getContext('2d');
+  const editor = document.getElementById('code-editor');
+  const outputPanel = document.getElementById('console-output');
+
+  let cfg = { mode: 'blob', targetHue: 48, clutter: 2, vignette: 0.3 };
+  let grid = [];              // grid[y][x] = { h, s, v, tag }
+  let tagOverlays = [];       // { id, x0, y0, x1, y1 } for drawing + clutter squares
+  let groundTruth = { blob: null, tag: null };
+  let lastReport = null;      // { cx, cy, count }
+  let lastTagReport = null;   // { id, cx, cy }
+  let hasRun = false;
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function hueDist(a, b) { let d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; }
+
+  function hsvToRgb(h, s, v) {
+    const c = v * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = v - c;
+    let r, g, b;
+    if (h < 60) { r = c; g = x; b = 0; }
+    else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; }
+    else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; }
+    else { r = c; g = 0; b = x; }
+    return `rgb(${Math.round((r + m) * 255)},${Math.round((g + m) * 255)},${Math.round((b + m) * 255)})`;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  SCENE GENERATION
+  // ─────────────────────────────────────────────────────────────
+  function paintBlob(g, cx, cy, r, hue) {
+    for (let y = Math.max(0, Math.floor(cy - r)); y <= Math.min(GRID_H - 1, Math.ceil(cy + r)); y++) {
+      for (let x = Math.max(0, Math.floor(cx - r)); x <= Math.min(GRID_W - 1, Math.ceil(cx + r)); x++) {
+        const d = Math.hypot(x - cx, y - cy);
+        if (d <= r) {
+          g[y][x].h = (hue + rand(-8, 8) + 360) % 360;
+          g[y][x].s = rand(0.72, 0.95);
+          g[y][x].v = Math.min(1, g[y][x].v * rand(0.9, 1.05) + 0.05);
+        }
+      }
+    }
+  }
+
+  function buildScene() {
+    const g = [];
+    for (let y = 0; y < GRID_H; y++) {
+      const row = [];
+      for (let x = 0; x < GRID_W; x++) {
+        const cx0 = GRID_W / 2, cy0 = GRID_H / 2;
+        const dx = (x - cx0) / cx0, dy = (y - cy0) / cy0;
+        const vign = 1 - cfg.vignette * Math.min(1, (dx * dx + dy * dy));
+        row.push({ h: rand(0, 360), s: rand(0, 0.08), v: Math.max(0.15, (0.82 + rand(-0.06, 0.06)) * vign), tag: -1 });
+      }
+      g.push(row);
+    }
+    tagOverlays = [];
+    groundTruth = { blob: null, tag: null };
+
+    // scattered single-pixel color noise, independent of clutter blobs
+    const noisePixels = Math.round(cfg.clutter * 1.5);
+    for (let i = 0; i < noisePixels; i++) {
+      const x = Math.floor(rand(0, GRID_W)), y = Math.floor(rand(0, GRID_H));
+      g[y][x].h = rand(0, 360);
+      g[y][x].s = rand(0.5, 0.9);
+    }
+
+    if (cfg.mode === 'blob') {
+      const bx = rand(6, GRID_W - 6), by = rand(5, GRID_H - 5), br = rand(2.2, 3.6);
+      paintBlob(g, bx, by, br, cfg.targetHue);
+      groundTruth.blob = { cx: bx, cy: by, r: br };
+
+      for (let i = 0; i < cfg.clutter; i++) {
+        let dh;
+        do { dh = rand(0, 360); } while (hueDist(dh, cfg.targetHue) < 45);
+        const dx2 = rand(3, GRID_W - 3), dy2 = rand(3, GRID_H - 3), dr = rand(1.2, 2.6);
+        paintBlob(g, dx2, dy2, dr, dh);
+      }
+    } else {
+      const tw = 5, th = 5;
+      const tx = Math.floor(rand(2, GRID_W - tw - 2)), ty = Math.floor(rand(2, GRID_H - th - 2));
+      const id = Math.floor(rand(0, 8));
+      for (let y = ty; y < ty + th; y++) {
+        for (let x = tx; x < tx + tw; x++) { g[y][x].s = 0; g[y][x].v = 0.9; g[y][x].tag = id; }
+      }
+      tagOverlays.push({ id, x0: tx, y0: ty, x1: tx + tw, y1: ty + th, isTag: true });
+      groundTruth.tag = { id, cx: tx + (tw - 1) / 2, cy: ty + (th - 1) / 2 };
+
+      for (let i = 0; i < cfg.clutter; i++) {
+        const cw = Math.floor(rand(2, 4)), ch = Math.floor(rand(2, 4));
+        let cx2, cy2, tries = 0;
+        do {
+          cx2 = Math.floor(rand(1, GRID_W - cw - 1));
+          cy2 = Math.floor(rand(1, GRID_H - ch - 1));
+          tries++;
+        } while (tries < 10 && cx2 + cw > tx && cx2 < tx + tw && cy2 + ch > ty && cy2 < ty + th);
+        for (let y = cy2; y < cy2 + ch; y++) {
+          for (let x = cx2; x < cx2 + cw; x++) { g[y][x].s = 0.02; g[y][x].v = rand(0.25, 0.5); }
+        }
+        tagOverlays.push({ id: -1, x0: cx2, y0: cy2, x1: cx2 + cw, y1: cy2 + ch, isTag: false });
+      }
+    }
+
+    grid = g;
+    lastReport = null;
+    lastTagReport = null;
+    hasRun = false;
+    setPill('idle', 'No scan yet');
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  STUDENT-FACING API
+  // ─────────────────────────────────────────────────────────────
+  function getHue(x, y) { return (x >= 0 && y >= 0 && x < GRID_W && y < GRID_H) ? grid[y][x].h : -1; }
+  function getSat(x, y) { return (x >= 0 && y >= 0 && x < GRID_W && y < GRID_H) ? grid[y][x].s : 0; }
+  function getVal(x, y) { return (x >= 0 && y >= 0 && x < GRID_W && y < GRID_H) ? grid[y][x].v : 0; }
+  function getTagId(x, y) { return (x >= 0 && y >= 0 && x < GRID_W && y < GRID_H) ? grid[y][x].tag : -1; }
+  function report(cx, cy, count) { lastReport = { cx, cy, count }; }
+  function reportTag(id, cx, cy) { lastTagReport = { id, cx, cy }; }
+
+  // ─────────────────────────────────────────────────────────────
+  //  JAVA -> JS (constrained subset, mirrors the IK / Filters modules)
+  // ─────────────────────────────────────────────────────────────
+  const javaToJS = src => src
+    .replace(/\bdouble\b/g, 'let').replace(/\bint\b/g, 'let').replace(/\bfloat\b/g, 'let')
+    .replace(/\bboolean\b/g, 'let').replace(/\blong\b/g, 'let')
+    .replace(/\bMath\.(atan2|acos|asin|sqrt|cos|sin|tan|pow|abs|min|max|PI|floor|ceil|round|signum|hypot)\b/g,
+      (_, fn) => fn === 'signum' ? 'Math.sign' : `Math.${fn}`)
+    .replace(/\bSystem\.out\.println\b/g, 'println');
+
+  function compileAndRun() {
+    clearOutput();
+    const src = editor.value;
+    const match = src.match(/void\s+scan\s*\(\s*\)\s*\{([\s\S]*)\}/);
+    if (!match) { addOutput('Error: cannot find  void scan() { ... }', 'error'); return; }
+    lastReport = null; lastTagReport = null;
+    const body = src.slice(0, match.index) + match[1];
+    try {
+      const fn = new Function(
+        'width', 'height', 'targetHue',
+        'getHue', 'getSat', 'getVal', 'getTagId',
+        'report', 'reportTag', 'println',
+        '"use strict";\n' + javaToJS(body)
+      );
+      fn(GRID_W, GRID_H, cfg.targetHue,
+        getHue, getSat, getVal, getTagId,
+        report, reportTag,
+        (...a) => addOutput(a.join(' '), 'line'));
+      addOutput('// scan() completed.', 'info');
+    } catch (e) {
+      addOutput('Error: ' + e.message, 'error');
+    }
+    hasRun = true;
+    evaluateResult();
+    draw();
+  }
+
+  function evaluateResult() {
+    if (cfg.mode === 'blob') {
+      const gt = groundTruth.blob;
+      if (!lastReport || lastReport.count <= 0) {
+        document.getElementById('m-reported').textContent = 'not found';
+        document.getElementById('m-err').textContent = '—';
+        setPill('bad', 'Not Found');
+        return;
+      }
+      const err = Math.hypot(lastReport.cx - gt.cx, lastReport.cy - gt.cy);
+      document.getElementById('m-reported').textContent = `(${lastReport.cx.toFixed(1)}, ${lastReport.cy.toFixed(1)})`;
+      document.getElementById('m-err').textContent = err.toFixed(2) + ' px';
+      if (err < 1.5) setPill('good', 'On Target');
+      else if (err < 4) setPill('warn', 'Close');
+      else setPill('bad', 'Off Target');
+    } else {
+      const gt = groundTruth.tag;
+      if (!lastTagReport) {
+        document.getElementById('m-reported').textContent = 'no tag';
+        document.getElementById('m-err').textContent = '—';
+        setPill('bad', 'No Tag Reported');
+        return;
+      }
+      const err = Math.hypot(lastTagReport.cx - gt.cx, lastTagReport.cy - gt.cy);
+      document.getElementById('m-reported').textContent = `ID ${lastTagReport.id} (${lastTagReport.cx.toFixed(1)}, ${lastTagReport.cy.toFixed(1)})`;
+      document.getElementById('m-err').textContent = err.toFixed(2) + ' px';
+      if (lastTagReport.id === gt.id && err < 2) setPill('good', 'Tag Matched');
+      else if (lastTagReport.id !== gt.id) setPill('bad', 'Wrong ID');
+      else setPill('warn', 'Close');
+    }
+  }
+
+  function setPill(state, label) {
+    const el = document.getElementById('sim-pill');
+    el.textContent = label;
+    el.className = 'tot-badge ' + (state === 'good' ? 'tot-badge--success' : state === 'bad' ? 'tot-badge--warning' : state === 'warn' ? 'tot-badge--warning' : 'tot-badge--soft');
+  }
+
+  function addOutput(text, cls) {
+    const d = document.createElement('div');
+    d.className = cls ? 'tot-console__line--' + cls : '';
+    d.textContent = text;
+    outputPanel.appendChild(d);
+    outputPanel.scrollTop = outputPanel.scrollHeight;
+  }
+  function clearOutput() { outputPanel.innerHTML = ''; }
+
+  // ─────────────────────────────────────────────────────────────
+  //  DRAWING
+  // ─────────────────────────────────────────────────────────────
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < GRID_H; y++) {
+      for (let x = 0; x < GRID_W; x++) {
+        const c = grid[y][x];
+        ctx.fillStyle = c.tag >= 0 ? '#0a0a0a' : hsvToRgb(c.h, c.s, c.v);
+        ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+      }
+    }
+
+    tagOverlays.forEach(t => {
+      const px0 = t.x0 * CELL, py0 = t.y0 * CELL, pw = (t.x1 - t.x0) * CELL, ph = (t.y1 - t.y0) * CELL;
+      if (t.isTag) {
+        ctx.fillStyle = '#0a0a0a'; ctx.fillRect(px0, py0, pw, ph);
+        ctx.fillStyle = '#f6f7f7'; ctx.fillRect(px0 + CELL, py0 + CELL, pw - 2 * CELL, ph - 2 * CELL);
+        ctx.fillStyle = '#0a0a0a';
+        ctx.font = 'bold 16px ' + css('--font-mono');
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(t.id), px0 + pw / 2, py0 + ph / 2);
+      } else {
+        ctx.fillStyle = '#3a3a3a'; ctx.fillRect(px0, py0, pw, ph);
+        ctx.strokeStyle = '#1b1c1d'; ctx.lineWidth = 1; ctx.strokeRect(px0 + 0.5, py0 + 0.5, pw - 1, ph - 1);
+      }
+    });
+
+    // ground truth marker (dashed) — shown once a scan has run, for feedback
+    if (hasRun) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(27,28,29,0.55)';
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1.5;
+      if (cfg.mode === 'blob' && groundTruth.blob) {
+        const gx = groundTruth.blob.cx * CELL + CELL / 2, gy = groundTruth.blob.cy * CELL + CELL / 2;
+        ctx.beginPath(); ctx.arc(gx, gy, 10, 0, Math.PI * 2); ctx.stroke();
+      } else if (cfg.mode === 'tag' && groundTruth.tag) {
+        const gx = groundTruth.tag.cx * CELL + CELL / 2, gy = groundTruth.tag.cy * CELL + CELL / 2;
+        ctx.beginPath(); ctx.arc(gx, gy, 10, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    // reported marker (solid crosshair)
+    const rep = cfg.mode === 'blob' ? lastReport : lastTagReport;
+    if (hasRun && rep && (cfg.mode === 'tag' || rep.count > 0)) {
+      const rx = rep.cx * CELL + CELL / 2, ry = rep.cy * CELL + CELL / 2;
+      ctx.save();
+      ctx.strokeStyle = '#0095C8'; ctx.lineWidth = 2;
+      const s = 9;
+      ctx.beginPath(); ctx.moveTo(rx - s, ry); ctx.lineTo(rx + s, ry); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(rx, ry - s); ctx.lineTo(rx, ry + s); ctx.stroke();
+      ctx.beginPath(); ctx.arc(rx, ry, s * 0.5, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  EXAMPLES
+  // ─────────────────────────────────────────────────────────────
+  const examples = {
+    blob:
+`// Basic color-blob centroid detector
+// Loop every pixel; keep a running sum of the coordinates of
+// every pixel whose hue is close to our target color.
+
+void scan() {
+    double sumX = 0;
+    double sumY = 0;
+    int count = 0;
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            double h = getHue(x, y);
+            double s = getSat(x, y);
+            if (s > 0.4 && Math.abs(h - targetHue) < 20) {
+                sumX += x;
+                sumY += y;
+                count++;
+            }
+        }
+    }
+
+    if (count > 0) {
+        report(sumX / count, sumY / count, count);
+    } else {
+        report(-1, -1, 0);
+    }
+}`,
+    robust:
+`// Same centroid approach, but hue-wrap-aware and with a minimum
+// blob size — a stray noisy pixel shouldn't be reported as "the
+// target."
+double MIN_PIXELS = 6;
+
+void scan() {
+    double sumX = 0;
+    double sumY = 0;
+    int count = 0;
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            double h = getHue(x, y);
+            double s = getSat(x, y);
+            double hueDelta = Math.abs(h - targetHue);
+            if (hueDelta > 180) hueDelta = 360 - hueDelta;   // hue wraps at 360°
+            if (s > 0.4 && hueDelta < 20) {
+                sumX += x;
+                sumY += y;
+                count++;
+            }
+        }
+    }
+
+    if (count >= MIN_PIXELS) {
+        report(sumX / count, sumY / count, count);
+    } else {
+        report(-1, -1, count);
+    }
+}`,
+    tag:
+`// AprilTag-style fiducial scan — tags hand you a stable integer
+// ID directly, no color math needed. Average every pixel that
+// shares the same ID.
+
+void scan() {
+    double sumX = 0;
+    double sumY = 0;
+    int count = 0;
+    int foundId = -1;
+
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int id = getTagId(x, y);
+            if (id >= 0) {
+                foundId = id;
+                sumX += x;
+                sumY += y;
+                count++;
+            }
+        }
+    }
+
+    if (count > 0) {
+        reportTag(foundId, sumX / count, sumY / count);
+    }
+}`
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  //  WIRING
+  // ─────────────────────────────────────────────────────────────
+  document.getElementById('mode-grid').addEventListener('click', (e) => {
+    const btn = e.target.closest('.tot-mode-btn');
+    if (!btn) return;
+    document.querySelectorAll('#mode-grid .tot-mode-btn').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    cfg.mode = btn.dataset.mode;
+    document.getElementById('blob-controls').style.display = cfg.mode === 'blob' ? 'block' : 'none';
+    document.getElementById('m-mode').textContent = cfg.mode === 'blob' ? 'Color Blob' : 'AprilTag';
+    buildScene();
+    draw();
+  });
+
+  document.getElementById('color-select').addEventListener('change', e => {
+    cfg.targetHue = parseFloat(e.target.value);
+    buildScene();
+    draw();
+  });
+  document.getElementById('clutter-slider').addEventListener('input', e => {
+    cfg.clutter = parseInt(e.target.value, 10);
+    document.getElementById('clutter-val').textContent = cfg.clutter;
+    buildScene();
+    draw();
+  });
+  document.getElementById('vignette-slider').addEventListener('input', e => {
+    cfg.vignette = parseFloat(e.target.value);
+    document.getElementById('vignette-val').textContent = cfg.vignette.toFixed(2);
+    buildScene();
+    draw();
+  });
+  document.getElementById('regen-btn').addEventListener('click', () => { buildScene(); draw(); });
+  document.getElementById('run-btn').addEventListener('click', compileAndRun);
+  document.querySelectorAll('.tot-code-toolbar [data-ex]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      editor.value = examples[btn.dataset.ex];
+      compileAndRun();
+    });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  //  INIT
+  // ─────────────────────────────────────────────────────────────
+  editor.value = examples.blob;
+  buildScene();
+  draw();
+})();
+</script>
+</body>
+</html>

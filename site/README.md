@@ -13,12 +13,15 @@ Treat that folder as the source of truth for anything visual that isn't already
 copied into `assets/css` here.
 
 **Current status:** the start page (`/index.html`, at the repo root so it's ready
-for GitHub Pages), the module scaffold (`modules/template.html`), and two complete
-modules — [`modules/inverse-kinematics.html`](modules/inverse-kinematics.html) and
-[`modules/filters.html`](modules/filters.html) — are built. The rest of the catalog
-in `data/modules.js` (Image Recognition, Mecanum Drive, Swerve Drive, PIDF Control)
-is still "coming soon" — that's the next phase, one module at a time, using this
-README (and Inverse Kinematics as a worked example) as the guide.
+for GitHub Pages), the module scaffold (`modules/template.html`), and all six
+modules in `data/modules.js` are built and marked `status: 'available'`:
+[`modules/inverse-kinematics.html`](modules/inverse-kinematics.html),
+[`modules/filters.html`](modules/filters.html),
+[`modules/image-recognition.html`](modules/image-recognition.html),
+[`modules/mecanum-drive.html`](modules/mecanum-drive.html),
+[`modules/swerve-drive.html`](modules/swerve-drive.html), and
+[`modules/pidf-control.html`](modules/pidf-control.html). Use this README (and
+Inverse Kinematics as a worked example) as the guide for any future module.
 
 ## Folder structure
 

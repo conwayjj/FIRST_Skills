@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swerve Drive — That ONE Team Training Hub</title>
+<meta name="description" content="Write a Java void step(dt) method that computes each swerve module's steering angle and drive speed from chassis translation + rotation, with inertia-aware steering motors.">
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/module.css">
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+      </div>
+    </div>
+  </div>
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="../../index.html">
+        <img class="tot-header__logo-img" src="../assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../README.md">Build Guide</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tot-section tot-section--tight tot-section--surface">
+    <div class="tot-container">
+
+      <div class="tot-breadcrumb">
+        <a href="../../index.html">Home</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <a href="../../index.html#modules">Modules</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <span class="tot-breadcrumb__current">Swerve Drive</span>
+      </div>
+
+      <div class="tot-module-header">
+        <div class="tot-module-header__badges">
+          <span class="tot-badge tot-badge--soft">Drivetrain</span>
+          <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
+        </div>
+        <h1 class="tot-module-header__title">Swerve Drive</h1>
+        <p class="tot-module-header__lead">
+          Every module on a swerve chassis independently steers <em>and</em> drives, so unlike
+          mecanum there's no fixed roller angle to do the mixing for you — each module has to
+          compute its own target angle and speed from the chassis's desired motion. Write a Java
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
+          that calls <code style="font-family:var(--font-mono);">setModuleState(i, angle, speed)</code>
+          for all four modules. Steering motors are inertia-aware here too — torque limits, max
+          speed, and damping all push back, so a module commanded to spin 170° takes real time to
+          get there.
+        </p>
+      </div>
+
+      <div class="tot-workbench">
+
+        <!-- WORKSPACE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Field</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--soft" id="sim-pill">Idle</span>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+            <div class="tot-sim-canvas-wrap">
+              <canvas id="field-canvas" width="480" height="360" aria-label="Swerve drive field view"></canvas>
+            </div>
+            <div class="tot-hint-text" id="field-hint">Press Run, then drag the joystick / rotate slider below.</div>
+
+            <div class="tot-metrics-row">
+              <div class="tot-metric-card"><div class="tot-metric-label">Heading</div><div class="tot-metric-value" id="m-heading">0°</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Field X</div><div class="tot-metric-value" id="m-x">0.0</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Field Y</div><div class="tot-metric-value" id="m-y">0.0</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Max Steer Err</div><div class="tot-metric-value" id="m-err">0°</div></div>
+            </div>
+
+            <div class="tot-control-group">
+              <div class="tot-control-heading">Driver Input</div>
+              <div style="display:flex;gap:16px;align-items:center;">
+                <canvas id="joystick" width="140" height="140" aria-label="Translation joystick" style="border-radius:50%;background:var(--grey-050);border:1px solid var(--border);touch-action:none;cursor:grab;flex:none;"></canvas>
+                <div style="flex:1;">
+                  <div class="tot-control-row">
+                    <span class="tot-control-label">driveY</span>
+                    <span class="tot-control-value" id="jy-val">0.00</span>
+                  </div>
+                  <div class="tot-control-row">
+                    <span class="tot-control-label">driveX</span>
+                    <span class="tot-control-value" id="jx-val">0.00</span>
+                  </div>
+                  <div class="tot-control-row">
+                    <span class="tot-control-label">rotate</span>
+                    <input type="range" class="tot-range" min="-1" max="1" step="0.02" value="0" id="rotate-slider">
+                    <span class="tot-control-value" id="rotate-val">0.00</span>
+                  </div>
+                  <button class="tot-btn tot-btn--sm tot-btn--ghost tot-btn--full" id="recenter-btn" type="button">Recenter Rotate</button>
+                </div>
+              </div>
+
+              <div class="tot-control-heading">Steering Physics</div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Max speed</span>
+                <input type="range" class="tot-range" min="60" max="720" step="20" value="300" id="steer-speed-slider">
+                <span class="tot-control-value" id="steer-speed-val">300°/s</span>
+              </div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Torque limit</span>
+                <input type="range" class="tot-range" min="60" max="900" step="20" value="420" id="steer-torque-slider">
+                <span class="tot-control-value" id="steer-torque-val">420°/s²</span>
+              </div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Damping</span>
+                <input type="range" class="tot-range" min="0" max="0.99" step="0.01" value="0.82" id="steer-damping-slider">
+                <span class="tot-control-value" id="steer-damping-val">0.82</span>
+              </div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Drive slew rate</span>
+                <input type="range" class="tot-range" min="1" max="15" step="0.5" value="8" id="drive-slew-slider">
+                <span class="tot-control-value" id="drive-slew-val">8.0 /s</span>
+              </div>
+              <button class="tot-btn tot-btn--sm tot-btn--secondary tot-btn--full" id="reset-pos-btn" type="button" style="margin-top:6px;">↻ Reset Chassis Position</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CODE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Swerve Code — Java</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--outline tot-badge--outline-on-dark">step(dt)</span>
+            </div>
+          </div>
+          <div class="tot-code-toolbar">
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="direct" type="button">Direct Steering</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="optimized" type="button">Optimized Steering</button>
+            <button class="tot-btn tot-btn--sm tot-btn--primary" id="run-btn" type="button" style="margin-left:auto;">Run ▸</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" id="stop-btn" type="button">Stop ◾</button>
+          </div>
+          <div class="tot-panel__body">
+            <textarea class="tot-code-editor" id="code-editor" spellcheck="false"></textarea>
+            <div class="tot-console" id="console-output">
+              <div class="tot-console__line--info">// step(dt) is called every animation frame (~60fps).</div>
+              <div class="tot-console__line--info">// Read driveY, driveX, rotate, then compute each module's own angle + speed.</div>
+              <div class="tot-console__line--info">// Call setModuleState(i, angleDeg, speed) for i = 0..3 (FL, FR, BL, BR).</div>
+              <div class="tot-console__line--info">// Click an example above, or write your own, then press Run.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Objective</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Give every module its own angle and speed</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 0;">
+          Each module sits at a fixed offset (mx, my) from the chassis center. Its required
+          velocity vector is the chassis's translation <em>plus</em> the extra velocity that
+          rotation adds at that offset: <code style="font-family:var(--font-mono);">vx = driveX − rotate·my</code>,
+          <code style="font-family:var(--font-mono);">vy = driveY + rotate·mx</code>. The module's
+          target angle is the direction of that vector, and its speed is its magnitude. Because
+          steering motors have inertia, a module asked to swing 170° takes real time to get there
+          — real swerve code (WPILib's <code style="font-family:var(--font-mono);">SwerveModuleState.optimize</code>)
+          avoids that by checking whether flipping the wheel 180° and reversing its drive
+          direction reaches the same net motion with less than 90° of rotation. Compare
+          <strong>Direct Steering</strong> against <strong>Optimized Steering</strong> with a hard
+          rotation reversal on the joystick and watch how much faster the optimized version
+          settles.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Reference</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">step(dt) API</h2>
+        </div>
+        <dl class="tot-reference-grid">
+          <dt>driveY</dt><dd>Joystick forward/back input, -1 (back) .. 1 (forward).</dd>
+          <dt>driveX</dt><dd>Joystick strafe input, -1 (left) .. 1 (right).</dd>
+          <dt>rotate</dt><dd>Rotate slider input, -1 (counter-clockwise) .. 1 (clockwise).</dd>
+          <dt>getModuleX(i), getModuleY(i)</dt><dd>Robot-relative position (px) of module i — 0=FL, 1=FR, 2=BL, 3=BR.</dd>
+          <dt>setModuleState(i, angle, speed)</dt><dd>Command module i's target steering angle (degrees, 0=forward, clockwise+) and drive speed.</dd>
+          <dt>getModuleAngle(i)</dt><dd>Module i's current (actual, inertia-limited) steering angle.</dd>
+          <dt>getModuleSpeed(i)</dt><dd>Module i's current (actual, slew-limited) drive speed.</dd>
+          <dt>robotHeading, robotX, robotY</dt><dd>Current chassis heading (deg) and field position (px).</dd>
+          <dt>println(...)</dt><dd>Write a line to the console panel below the editor.</dd>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="../assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="../../index.html">Home</a>
+      <a class="tot-footer__link" href="../../index.html#modules">Modules</a>
+      <a class="tot-footer__link" href="../README.md">Build Guide</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="../assets/js/nav.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ─────────────────────────────────────────────────────────────
+  //  CONFIG
+  // ─────────────────────────────────────────────────────────────
+  const canvas = document.getElementById('field-canvas');
+  const ctx = canvas.getContext('2d');
+  const editor = document.getElementById('code-editor');
+  const outputPanel = document.getElementById('console-output');
+  const W = canvas.width, H = canvas.height;
+  const MARGIN = 40;
+  const HW = 26; // module offset from chassis center, px
+
+  // module order: 0=FL, 1=FR, 2=BL, 3=BR (robot-frame x=right, y=forward)
+  const MODULE_POS = [
+    { x: -HW, y: HW }, { x: HW, y: HW }, { x: -HW, y: -HW }, { x: HW, y: -HW }
+  ];
+
+  let cfg = { steerSpeed: 300, steerTorque: 420, steerDamping: 0.82, driveSlew: 8 };
+  let input = { driveY: 0, driveX: 0, rotate: 0 };
+
+  let modules = MODULE_POS.map(() => ({ angle: 0, vel: 0, targetAngle: 0, speed: 0, targetSpeed: 0 }));
+  let chassis = { x: W / 2, y: H / 2, heading: 0 };
+  let trail = [];
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  function resetChassis() {
+    chassis = { x: W / 2, y: H / 2, heading: 0 };
+    modules = MODULE_POS.map(() => ({ angle: 0, vel: 0, targetAngle: 0, speed: 0, targetSpeed: 0 }));
+    trail = [];
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  PHYSICS
+  // ─────────────────────────────────────────────────────────────
+  function physicsStep(dt) {
+    const dampFactor = Math.pow(cfg.steerDamping, dt);
+    modules.forEach(m => {
+      let err = m.targetAngle - m.angle;
+      while (err > 180) err -= 360;
+      while (err < -180) err += 360;
+
+      const brakingDist = (m.vel * m.vel) / (2 * cfg.steerTorque + 0.001);
+      let accel;
+      if (Math.abs(err) > brakingDist * 1.1) accel = Math.sign(err) * cfg.steerTorque;
+      else accel = -Math.sign(m.vel) * cfg.steerTorque;
+      m.vel += accel * dt;
+      m.vel *= dampFactor;
+      m.vel = Math.max(-cfg.steerSpeed, Math.min(cfg.steerSpeed, m.vel));
+      if (Math.abs(err) < 0.05 && Math.abs(m.vel) < 0.5) { m.vel = 0; m.angle = m.targetAngle; }
+      else m.angle += m.vel * dt;
+      m.angle = ((m.angle % 360) + 360) % 360;
+
+      const maxDelta = cfg.driveSlew * dt;
+      const sErr = m.targetSpeed - m.speed;
+      m.speed += Math.max(-maxDelta, Math.min(maxDelta, sErr));
+    });
+
+    // Forward kinematics: least-squares recovery of chassis (vy, vx, omega)
+    // from the four ACTUAL module vectors — the pseudo-inverse of the
+    // per-module inverse kinematics used by the student's setModuleState calls.
+    let sumVx = 0, sumVy = 0, sumCross = 0;
+    modules.forEach((m, i) => {
+      const rad = m.angle * Math.PI / 180;
+      const vx = m.speed * Math.sin(rad), vy = m.speed * Math.cos(rad);
+      sumVx += vx; sumVy += vy;
+      sumCross += MODULE_POS[i].x * vy - MODULE_POS[i].y * vx;
+    });
+    const vx = sumVx / 4, vy = sumVy / 4;
+    const omega = sumCross / (8 * HW * HW);
+
+    const rad = chassis.heading * Math.PI / 180;
+    const fwdX = Math.sin(rad), fwdY = -Math.cos(rad);
+    const rightX = Math.cos(rad), rightY = Math.sin(rad);
+    const LIN_SPEED = 140, ROT_SPEED = 180;
+
+    chassis.x += (vy * fwdX + vx * rightX) * LIN_SPEED * dt;
+    chassis.y += (vy * fwdY + vx * rightY) * LIN_SPEED * dt;
+    chassis.heading += omega * ROT_SPEED * dt;
+    chassis.heading = ((chassis.heading % 360) + 360) % 360;
+
+    chassis.x = Math.max(MARGIN, Math.min(W - MARGIN, chassis.x));
+    chassis.y = Math.max(MARGIN, Math.min(H - MARGIN, chassis.y));
+
+    trail.push({ x: chassis.x, y: chassis.y });
+    if (trail.length > 120) trail.shift();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  STUDENT-FACING API
+  // ─────────────────────────────────────────────────────────────
+  function getModuleX(i) { return MODULE_POS[i] ? MODULE_POS[i].x : 0; }
+  function getModuleY(i) { return MODULE_POS[i] ? MODULE_POS[i].y : 0; }
+  function setModuleState(i, angle, speed) {
+    if (i < 0 || i >= 4) return;
+    modules[i].targetAngle = ((angle % 360) + 360) % 360;
+    modules[i].targetSpeed = speed;
+  }
+  function getModuleAngle(i) { return modules[i] ? modules[i].angle : 0; }
+  function getModuleSpeed(i) { return modules[i] ? modules[i].speed : 0; }
+
+  // ─────────────────────────────────────────────────────────────
+  //  JAVA -> JS (constrained subset, mirrors the other modules)
+  // ─────────────────────────────────────────────────────────────
+  const javaToJS = src => src
+    .replace(/\bdouble\b/g, 'let').replace(/\bint\b/g, 'let').replace(/\bfloat\b/g, 'let')
+    .replace(/\bboolean\b/g, 'let').replace(/\blong\b/g, 'let')
+    .replace(/\bMath\.(atan2|acos|asin|sqrt|cos|sin|tan|pow|abs|min|max|PI|floor|ceil|round|signum)\b/g,
+      (_, fn) => fn === 'signum' ? 'Math.sign' : `Math.${fn}`)
+    .replace(/\bSystem\.out\.println\b/g, 'println');
+
+  let simRunning = false, animFrame = null, lastTime = null, stepFn = null;
+  const runBtn = document.getElementById('run-btn');
+
+  function compileAndRun() {
+    clearOutput();
+    const src = editor.value;
+    const stepMatch = src.match(/void\s+step\s*\(\s*(?:double\s+)?dt\s*\)\s*\{([\s\S]*)\}/);
+    if (!stepMatch) { addOutput('Error: cannot find  void step(double dt) { ... }', 'error'); return; }
+    const initSrc = src.slice(0, stepMatch.index);
+    const stepSrc = stepMatch[1];
+
+    try {
+      const initFn = new Function('println', '"use strict";\n' + javaToJS(initSrc));
+      initFn((...a) => addOutput(a.join(' '), 'line'));
+    } catch (e) { addOutput('Init error: ' + e.message, 'error'); return; }
+
+    try {
+      const rawStep = new Function(
+        'dt', 'driveY', 'driveX', 'rotate',
+        'robotHeading', 'robotX', 'robotY',
+        'getModuleX', 'getModuleY', 'setModuleState',
+        'getModuleAngle', 'getModuleSpeed', 'println',
+        '"use strict";\n' + javaToJS(stepSrc)
+      );
+      stepFn = (dt) => rawStep(dt, input.driveY, input.driveX, input.rotate,
+        chassis.heading, chassis.x, chassis.y,
+        getModuleX, getModuleY, setModuleState,
+        getModuleAngle, getModuleSpeed,
+        (...a) => addOutput(a.join(' '), 'line'));
+      addOutput('// step() compiled OK.', 'info');
+      startSim();
+    } catch (e) { addOutput('Compile error: ' + e.message, 'error'); stepFn = null; }
+  }
+
+  function startSim() {
+    if (simRunning) return;
+    simRunning = true; lastTime = null;
+    runBtn.classList.add('is-active');
+    setPill('running', 'Running');
+    animFrame = requestAnimationFrame(simLoop);
+  }
+  function stopSim() {
+    if (!simRunning) return;
+    simRunning = false;
+    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    runBtn.classList.remove('is-active');
+    setPill('idle', 'Stopped');
+  }
+
+  function simLoop(ts) {
+    if (!simRunning) return;
+    if (!lastTime) lastTime = ts;
+    const dt = Math.min((ts - lastTime) / 1000, 0.05);
+    lastTime = ts;
+
+    if (stepFn) {
+      try { stepFn(dt); }
+      catch (e) { addOutput('Runtime error in step(): ' + e.message, 'error'); stopSim(); return; }
+    }
+    physicsStep(dt);
+    draw();
+    updateMetrics();
+    if (simRunning) animFrame = requestAnimationFrame(simLoop);
+  }
+
+  function setPill(state, label) {
+    const el = document.getElementById('sim-pill');
+    el.textContent = label;
+    el.className = 'tot-badge ' + (state === 'running' ? 'tot-badge--brand tot-badge--pulse' : 'tot-badge--soft');
+  }
+
+  function addOutput(text, cls) {
+    const d = document.createElement('div');
+    d.className = cls ? 'tot-console__line--' + cls : '';
+    d.textContent = text;
+    outputPanel.appendChild(d);
+    outputPanel.scrollTop = outputPanel.scrollHeight;
+  }
+  function clearOutput() { outputPanel.innerHTML = ''; }
+
+  // ─────────────────────────────────────────────────────────────
+  //  DRAWING
+  // ─────────────────────────────────────────────────────────────
+  function drawGrid() {
+    ctx.fillStyle = css('--grey-050'); ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = css('--border'); ctx.lineWidth = 0.5;
+    for (let x = 0; x <= W; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let y = 0; y <= H; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    ctx.strokeStyle = css('--border-strong'); ctx.lineWidth = 2;
+    ctx.strokeRect(MARGIN / 2, MARGIN / 2, W - MARGIN, H - MARGIN);
+  }
+
+  function drawTrail() {
+    if (trail.length < 2) return;
+    ctx.strokeStyle = 'rgba(0,149,200,0.25)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    trail.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+    ctx.stroke();
+  }
+
+  function heatColor(speed) {
+    const f = Math.min(Math.abs(speed), 1.4) / 1.4;
+    const r = Math.round(0 + f * 214), g = Math.round(149 - f * 80), b = Math.round(200 - f * 131);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function drawChassis() {
+    const { x, y, heading } = chassis;
+    const rad = heading * Math.PI / 180;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rad);
+
+    ctx.fillStyle = 'rgba(0,149,200,0.18)';
+    ctx.strokeStyle = css('--blue-700'); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.rect(-HW, -HW, HW * 2, HW * 2); ctx.fill(); ctx.stroke();
+
+    modules.forEach((m, i) => {
+      const pos = MODULE_POS[i];
+      ctx.save();
+      ctx.translate(pos.x, pos.y);
+      ctx.rotate(m.angle * Math.PI / 180);
+      ctx.fillStyle = heatColor(m.speed);
+      ctx.strokeStyle = css('--text-strong'); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.rect(-6, -12, 12, 24); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+      for (let s = -8; s <= 8; s += 4) { ctx.beginPath(); ctx.moveTo(-6, s); ctx.lineTo(6, s); ctx.stroke(); }
+      // heading tick showing which way the wheel currently rolls "forward"
+      ctx.strokeStyle = '#0095C8'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -18); ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = css('--text-muted');
+      ctx.font = '9px ' + css('--font-mono');
+      ctx.textAlign = 'center';
+      ctx.fillText(`M${i}`, pos.x, pos.y + (pos.y > 0 ? 24 : -20));
+    });
+
+    // heading arrow
+    ctx.strokeStyle = css('--text-strong'); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -HW - 10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -HW - 10); ctx.lineTo(-5, -HW - 2); ctx.lineTo(5, -HW - 2); ctx.closePath();
+    ctx.fillStyle = css('--text-strong'); ctx.fill();
+    ctx.restore();
+  }
+
+  function draw() { drawGrid(); drawTrail(); drawChassis(); }
+
+  function updateMetrics() {
+    document.getElementById('m-heading').textContent = chassis.heading.toFixed(0) + '°';
+    document.getElementById('m-x').textContent = (chassis.x - W / 2).toFixed(1);
+    document.getElementById('m-y').textContent = -(chassis.y - H / 2).toFixed(1);
+    let maxErr = 0;
+    modules.forEach(m => {
+      let err = Math.abs(m.targetAngle - m.angle) % 360;
+      if (err > 180) err = 360 - err;
+      maxErr = Math.max(maxErr, err);
+    });
+    document.getElementById('m-err').textContent = maxErr.toFixed(0) + '°';
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  JOYSTICK WIDGET
+  // ─────────────────────────────────────────────────────────────
+  const joy = document.getElementById('joystick');
+  const jctx = joy.getContext('2d');
+  const JR = joy.width / 2;
+  let joyDragging = false, joyPos = { x: 0, y: 0 };
+
+  function drawJoystick() {
+    jctx.clearRect(0, 0, joy.width, joy.height);
+    jctx.strokeStyle = css('--border-strong'); jctx.lineWidth = 1;
+    jctx.beginPath(); jctx.arc(JR, JR, JR - 4, 0, Math.PI * 2); jctx.stroke();
+    jctx.beginPath(); jctx.moveTo(JR, 4); jctx.lineTo(JR, joy.height - 4); jctx.stroke();
+    jctx.beginPath(); jctx.moveTo(4, JR); jctx.lineTo(joy.width - 4, JR); jctx.stroke();
+
+    const hx = JR + joyPos.x * (JR - 20), hy = JR + joyPos.y * (JR - 20);
+    jctx.fillStyle = css('--tot-blue');
+    jctx.beginPath(); jctx.arc(hx, hy, 14, 0, Math.PI * 2); jctx.fill();
+    jctx.strokeStyle = css('--blue-900'); jctx.lineWidth = 1.5; jctx.stroke();
+  }
+
+  function joyFromEvent(e) {
+    const rect = joy.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    let nx = (cx - JR) / (JR - 20), ny = (cy - JR) / (JR - 20);
+    const mag = Math.hypot(nx, ny);
+    if (mag > 1) { nx /= mag; ny /= mag; }
+    joyPos = { x: nx, y: ny };
+    input.driveX = nx;
+    input.driveY = -ny;
+    document.getElementById('jx-val').textContent = input.driveX.toFixed(2);
+    document.getElementById('jy-val').textContent = input.driveY.toFixed(2);
+    drawJoystick();
+  }
+
+  function joyStart(e) { joyDragging = true; joy.style.cursor = 'grabbing'; joyFromEvent(e); e.preventDefault(); }
+  function joyMove(e) { if (joyDragging) { joyFromEvent(e); e.preventDefault(); } }
+  function joyEnd() {
+    if (!joyDragging) return;
+    joyDragging = false; joy.style.cursor = 'grab';
+    joyPos = { x: 0, y: 0 }; input.driveX = 0; input.driveY = 0;
+    document.getElementById('jx-val').textContent = '0.00';
+    document.getElementById('jy-val').textContent = '0.00';
+    drawJoystick();
+  }
+  joy.addEventListener('mousedown', joyStart);
+  window.addEventListener('mousemove', joyMove);
+  window.addEventListener('mouseup', joyEnd);
+  joy.addEventListener('touchstart', joyStart, { passive: false });
+  joy.addEventListener('touchmove', joyMove, { passive: false });
+  joy.addEventListener('touchend', joyEnd);
+
+  // ─────────────────────────────────────────────────────────────
+  //  CONTROL WIRING
+  // ─────────────────────────────────────────────────────────────
+  document.getElementById('rotate-slider').addEventListener('input', e => {
+    input.rotate = parseFloat(e.target.value);
+    document.getElementById('rotate-val').textContent = input.rotate.toFixed(2);
+  });
+  document.getElementById('recenter-btn').addEventListener('click', () => {
+    input.rotate = 0;
+    document.getElementById('rotate-slider').value = 0;
+    document.getElementById('rotate-val').textContent = '0.00';
+  });
+  document.getElementById('steer-speed-slider').addEventListener('input', e => {
+    cfg.steerSpeed = parseFloat(e.target.value);
+    document.getElementById('steer-speed-val').textContent = cfg.steerSpeed + '°/s';
+  });
+  document.getElementById('steer-torque-slider').addEventListener('input', e => {
+    cfg.steerTorque = parseFloat(e.target.value);
+    document.getElementById('steer-torque-val').textContent = cfg.steerTorque + '°/s²';
+  });
+  document.getElementById('steer-damping-slider').addEventListener('input', e => {
+    cfg.steerDamping = parseFloat(e.target.value);
+    document.getElementById('steer-damping-val').textContent = cfg.steerDamping.toFixed(2);
+  });
+  document.getElementById('drive-slew-slider').addEventListener('input', e => {
+    cfg.driveSlew = parseFloat(e.target.value);
+    document.getElementById('drive-slew-val').textContent = cfg.driveSlew.toFixed(1) + ' /s';
+  });
+  document.getElementById('reset-pos-btn').addEventListener('click', () => { resetChassis(); draw(); updateMetrics(); });
+  document.getElementById('run-btn').addEventListener('click', compileAndRun);
+  document.getElementById('stop-btn').addEventListener('click', stopSim);
+  document.querySelectorAll('.tot-code-toolbar [data-ex]').forEach(btn => {
+    btn.addEventListener('click', () => { editor.value = examples[btn.dataset.ex]; compileAndRun(); });
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  //  EXAMPLES
+  // ─────────────────────────────────────────────────────────────
+  const examples = {
+    direct:
+`// Classic swerve inverse kinematics — every module figures out
+// its own angle + speed from the chassis's desired motion.
+
+void step(double dt) {
+    for (int i = 0; i < 4; i++) {
+        double mx = getModuleX(i);
+        double my = getModuleY(i);
+
+        double vx = driveX - rotate * my;
+        double vy = driveY + rotate * mx;
+
+        double angle = Math.atan2(vx, vy) * 180.0 / Math.PI;
+        double speed = Math.sqrt(vx * vx + vy * vy);
+
+        setModuleState(i, angle, speed);
+    }
+}`,
+    optimized:
+`// Same kinematics, but each module takes whichever heading is
+// closer to its CURRENT angle — driving in reverse instead of
+// spinning more than 90°, the way WPILib's
+// SwerveModuleState.optimize() does.
+
+void step(double dt) {
+    for (int i = 0; i < 4; i++) {
+        double mx = getModuleX(i);
+        double my = getModuleY(i);
+
+        double vx = driveX - rotate * my;
+        double vy = driveY + rotate * mx;
+
+        double angle = Math.atan2(vx, vy) * 180.0 / Math.PI;
+        double speed = Math.sqrt(vx * vx + vy * vy);
+
+        double current = getModuleAngle(i);
+        double delta = angle - current;
+        while (delta > 180) delta -= 360;
+        while (delta < -180) delta += 360;
+
+        if (Math.abs(delta) > 90) {
+            angle = angle + 180;
+            speed = -speed;
+        }
+
+        setModuleState(i, angle, speed);
+    }
+}`
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  //  INIT
+  // ─────────────────────────────────────────────────────────────
+  editor.value = examples.direct;
+  drawJoystick();
+  resetChassis();
+  draw();
+  updateMetrics();
+})();
+</script>
+</body>
+</html>

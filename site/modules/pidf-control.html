@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PIDF Control — That ONE Team Training Hub</title>
+<meta name="description" content="Write a Java double calculate(double current, double target) PIDF controller and watch a simulated gravity-loaded elevator converge on a setpoint in real time.">
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/module.css">
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+      </div>
+    </div>
+  </div>
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="../../index.html">
+        <img class="tot-header__logo-img" src="../assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../README.md">Build Guide</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tot-section tot-section--tight tot-section--surface">
+    <div class="tot-container">
+
+      <div class="tot-breadcrumb">
+        <a href="../../index.html">Home</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <a href="../../index.html#modules">Modules</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <span class="tot-breadcrumb__current">PIDF Control</span>
+      </div>
+
+      <div class="tot-module-header">
+        <div class="tot-module-header__badges">
+          <span class="tot-badge tot-badge--soft">Controls</span>
+          <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
+        </div>
+        <h1 class="tot-module-header__title">PIDF Control</h1>
+        <p class="tot-module-header__lead">
+          A simulated elevator carriage fights real gravity and friction. Write a Java
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">double calculate(double current, double target) { ... }</code>
+          — called at a fixed 50Hz, exactly like a real periodic control loop — and return the
+          motor output, -1..1. Gain fields you declare above it (kP, kI, kD, kF, an integral
+          accumulator, a previous error) persist between calls the same way instance fields would
+          on a real robot. Change the setpoint or hit "Disturb" and watch the response.
+        </p>
+      </div>
+
+      <div class="tot-workbench">
+
+        <!-- WORKSPACE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Elevator Response</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--soft" id="sim-pill">Idle</span>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+
+            <div style="display:flex;justify-content:flex-end;padding:8px 14px 0;">
+              <span class="tot-chart-legend">
+                <span class="tot-chart-legend__item"><span class="tot-chart-legend__swatch" style="background:var(--grey-500)"></span>target</span>
+                <span class="tot-chart-legend__item"><span class="tot-chart-legend__swatch" style="background:var(--tot-blue)"></span>position</span>
+              </span>
+            </div>
+
+            <div class="tot-sim-canvas-wrap">
+              <canvas id="response-chart" width="880" height="260" style="width:100%;height:260px;" aria-label="Setpoint and position over time"></canvas>
+            </div>
+
+            <div class="tot-metrics-row">
+              <div class="tot-metric-card"><div class="tot-metric-label">Position</div><div class="tot-metric-value" id="m-pos">0.0%</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Target</div><div class="tot-metric-value" id="m-target">50.0%</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Overshoot</div><div class="tot-metric-value" id="m-overshoot">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Settle Time</div><div class="tot-metric-value" id="m-settle">—</div></div>
+            </div>
+
+            <div class="tot-control-group">
+              <div class="tot-control-heading">Setpoint</div>
+              <div class="tot-mode-grid" id="preset-grid" style="grid-template-columns:1fr 1fr 1fr;">
+                <button class="tot-mode-btn" data-preset="15" type="button">Low</button>
+                <button class="tot-mode-btn is-active" data-preset="50" type="button">Mid</button>
+                <button class="tot-mode-btn" data-preset="85" type="button">High</button>
+              </div>
+              <div class="tot-control-row" style="margin-top:10px;">
+                <span class="tot-control-label">Custom</span>
+                <input type="range" class="tot-range" min="0" max="100" step="1" value="50" id="setpoint-slider">
+                <span class="tot-control-value" id="setpoint-val">50%</span>
+              </div>
+              <button class="tot-btn tot-btn--sm tot-btn--secondary tot-btn--full" id="disturb-btn" type="button" style="margin-top:6px;">⚡ Disturb</button>
+
+              <div class="tot-control-heading">Plant Physics</div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Mass</span>
+                <input type="range" class="tot-range" min="0.5" max="5" step="0.25" value="2" id="mass-slider">
+                <span class="tot-control-value" id="mass-val">2.00</span>
+              </div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Gravity</span>
+                <input type="range" class="tot-range" min="0" max="15" step="0.5" value="8" id="gravity-slider">
+                <span class="tot-control-value" id="gravity-val">8.0</span>
+              </div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">Friction</span>
+                <input type="range" class="tot-range" min="0" max="3" step="0.1" value="0.8" id="friction-slider">
+                <span class="tot-control-value" id="friction-val">0.80</span>
+              </div>
+              <button class="tot-btn tot-btn--sm tot-btn--ghost tot-btn--full" id="reset-btn" type="button">↻ Reset Mechanism</button>
+
+              <div class="tot-control-heading">Motor Output</div>
+              <div class="tot-vel-row">
+                <span class="tot-vel-name">output</span>
+                <div class="tot-vel-track"><div class="tot-vel-fill" id="output-bar" style="width:50%;margin-left:50%;"></div></div>
+                <span class="tot-vel-value" id="output-val">0.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CODE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Controller Code — Java</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--outline tot-badge--outline-on-dark">calculate(cur, tgt)</span>
+            </div>
+          </div>
+          <div class="tot-code-toolbar">
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="p" type="button">P Only</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="pd" type="button">PD</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="pid" type="button">PID</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-ex="pidf" type="button">PIDF</button>
+            <button class="tot-btn tot-btn--sm tot-btn--primary" id="run-btn" type="button" style="margin-left:auto;">Run ▸</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" id="stop-btn" type="button">Stop ◾</button>
+          </div>
+          <div class="tot-panel__body">
+            <textarea class="tot-code-editor" id="code-editor" spellcheck="false"></textarea>
+            <div class="tot-console" id="console-output">
+              <div class="tot-console__line--info">// calculate(current, target) is called every 20ms (50Hz), like a real periodic loop.</div>
+              <div class="tot-console__line--info">// Declare gain fields (kP, kI, kD, kF...) above it — they persist between calls.</div>
+              <div class="tot-console__line--info">// Click an example above, or write your own, then press Run.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Objective</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Converge fast, without overshoot or steady-state sag</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 0;">
+          Start with <strong>P Only</strong> and watch it settle noticeably below the target line —
+          gravity is constantly pulling the carriage down, and a proportional term alone can't fully
+          cancel a constant force (it needs some standing error to produce standing output). Add a
+          <strong>D</strong> term to damp the approach, an <strong>I</strong> term to slowly erase
+          that remaining steady-state error (with an integral clamp so it can't wind up
+          unboundedly), or skip the wait entirely with a <strong>kF</strong> feedforward term sized
+          to roughly cancel gravity on its own — the <strong>PIDF</strong> example combines all
+          four. Change the setpoint mid-flight or hit <strong>Disturb</strong> to see how each
+          combination recovers.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Reference</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">calculate(current, target) API</h2>
+        </div>
+        <dl class="tot-reference-grid">
+          <dt>calculate(current, target)</dt><dd>The method you implement; called once every 20ms with the carriage's current position (0-100) and the target setpoint. Return motor output, -1..1.</dd>
+          <dt>state fields</dt><dd>Variables declared above calculate() (e.g. double integral = 0;) persist between calls, the same way instance fields would in a real subsystem.</dd>
+          <dt>Run / Stop</dt><dd>Compiles calculate() and starts (or stops) the fixed-50Hz simulation loop.</dd>
+          <dt>Setpoint</dt><dd>Low/Mid/High presets or the Custom slider — changing it resets the overshoot/settle-time trackers.</dd>
+          <dt>Disturb</dt><dd>Gives the carriage an unexpected shove without changing the setpoint — a quick disturbance-rejection test.</dd>
+          <dt>Mass, Gravity, Friction</dt><dd>Plant parameters — higher gravity or mass makes steady-state sag (and the need for kF) more obvious.</dd>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="../assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="../../index.html">Home</a>
+      <a class="tot-footer__link" href="../../index.html#modules">Modules</a>
+      <a class="tot-footer__link" href="../README.md">Build Guide</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="../assets/js/nav.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ─────────────────────────────────────────────────────────────
+  //  CONFIG / STATE
+  // ─────────────────────────────────────────────────────────────
+  const FIXED_DT = 0.02;      // 50Hz, matches a real FRC periodic loop
+  const MAX_FORCE = 60;       // motor's max acceleration contribution, units/s^2
+  const WINDOW_SEC = 8;
+
+  const editor = document.getElementById('code-editor');
+  const outputPanel = document.getElementById('console-output');
+
+  let plant = { mass: 2, gravity: 8, friction: 0.8 };
+  let target = 50;
+  let pos = 50, vel = 0, lastOutput = 0;
+  let simTime = 0;
+  let history = []; // { t, target, pos }
+
+  let setpointChangeTime = 0, setpointChangeFrom = 50, travelDir = 0;
+  let overshoot = null, settleTime = null, withinBandSince = null;
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  function resetMechanism() {
+    pos = target; vel = 0; lastOutput = 0; simTime = 0;
+    history = [{ t: 0, target, pos }];
+    setpointChangeTime = 0; setpointChangeFrom = pos; travelDir = 0;
+    overshoot = null; settleTime = null; withinBandSince = null;
+  }
+
+  function onSetpointChanged() {
+    setpointChangeTime = simTime;
+    setpointChangeFrom = pos;
+    travelDir = Math.sign(target - pos) || 1;
+    overshoot = null; settleTime = null; withinBandSince = null;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  PHYSICS
+  // ─────────────────────────────────────────────────────────────
+  function physicsStep(output) {
+    lastOutput = Math.max(-1, Math.min(1, output));
+    const forceMotor = lastOutput * MAX_FORCE;
+    const forceGravity = -plant.mass * plant.gravity;
+    const forceFriction = -plant.friction * vel;
+    const accel = (forceMotor + forceGravity + forceFriction) / plant.mass;
+
+    vel += accel * FIXED_DT;
+    pos += vel * FIXED_DT;
+    if (pos < 0) { pos = 0; vel = Math.max(0, vel); }
+    if (pos > 100) { pos = 100; vel = Math.min(0, vel); }
+    simTime += FIXED_DT;
+
+    history.push({ t: simTime, target, pos });
+    const cutoff = simTime - WINDOW_SEC - 1;
+    while (history.length > 2 && history[0].t < cutoff) history.shift();
+
+    // — overshoot / settle-time tracking, relative to the last setpoint change —
+    const travelDist = Math.abs(target - setpointChangeFrom);
+    const beyond = travelDir > 0 ? pos - target : target - pos;
+    if (beyond > 0) overshoot = Math.max(overshoot || 0, travelDist > 0.5 ? (beyond / travelDist) * 100 : beyond);
+
+    const error = Math.abs(target - pos);
+    const tolerance = 1.5;
+    if (error <= tolerance) {
+      if (withinBandSince === null) withinBandSince = simTime;
+      if (settleTime === null && (simTime - withinBandSince) >= 0.5) {
+        settleTime = withinBandSince - setpointChangeTime;
+      }
+    } else {
+      withinBandSince = null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  JAVA -> JS TRANSPILER (constrained subset, mirrors the Filters module)
+  // ─────────────────────────────────────────────────────────────
+  function transpileBody(body) {
+    let b = body;
+    b = b.replace(/\b(double|int|float|long|boolean)\s+(\w+)\s*=/g, 'let $2 =');
+    b = b.replace(/\b(double|int|float|long|boolean)\s+(\w+)\s*;/g, 'let $2;');
+    b = b.replace(/\(\s*int\s*\)\s*/g, '');
+    b = b.replace(/\(\s*double\s*\)\s*/g, '');
+    b = b.replace(/\bSystem\.out\.println\b/g, 'println');
+    return b;
+  }
+
+  function transpileAndBuild(javaCode) {
+    const sigRegex = /double\s+calculate\s*\(\s*double\s+(\w+)\s*,\s*double\s+(\w+)\s*\)\s*\{/;
+    const sigMatch = javaCode.match(sigRegex);
+    if (!sigMatch) throw new Error("Couldn't find a method matching:  double calculate(double current, double target) { ... }");
+    const p1 = sigMatch[1], p2 = sigMatch[2];
+    const startIdx = sigMatch.index + sigMatch[0].length;
+    let depth = 1, i = startIdx;
+    for (; i < javaCode.length; i++) {
+      if (javaCode[i] === '{') depth++;
+      else if (javaCode[i] === '}') { depth--; if (depth === 0) break; }
+    }
+    if (depth !== 0) throw new Error("Mismatched braces — check that every { has a matching }.");
+    const preamble = javaCode.slice(0, sigMatch.index);
+    const rawBody = javaCode.slice(startIdx, i);
+    const jsPreamble = transpileBody(preamble);
+    const jsBody = transpileBody(rawBody);
+    const factory = new Function(
+      'println',
+      '"use strict";\n' + jsPreamble +
+      '\nreturn function(' + p1 + ',' + p2 + '){\n' + jsBody + '\n};'
+    );
+    return factory((...a) => addOutput(a.join(' '), 'line'));
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  SIM LOOP (fixed 50Hz timestep, driven by requestAnimationFrame)
+  // ─────────────────────────────────────────────────────────────
+  let calcFn = null, simRunning = false, animFrame = null, lastTs = null, accumulator = 0;
+  const runBtn = document.getElementById('run-btn');
+
+  function compileAndRun() {
+    clearOutput();
+    try {
+      calcFn = transpileAndBuild(editor.value);
+      addOutput('// calculate() compiled OK.', 'info');
+    } catch (e) {
+      addOutput('Compile error: ' + e.message, 'error');
+      calcFn = null;
+      return;
+    }
+    startSim();
+  }
+
+  function startSim() {
+    if (simRunning) return;
+    simRunning = true; lastTs = null; accumulator = 0;
+    runBtn.classList.add('is-active');
+    setPill('running', 'Running');
+    animFrame = requestAnimationFrame(loop);
+  }
+  function stopSim() {
+    if (!simRunning) return;
+    simRunning = false;
+    if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+    runBtn.classList.remove('is-active');
+    setPill('idle', 'Stopped');
+  }
+
+  function loop(ts) {
+    if (!simRunning) return;
+    if (!lastTs) lastTs = ts;
+    accumulator += Math.min((ts - lastTs) / 1000, 0.1);
+    lastTs = ts;
+
+    while (accumulator >= FIXED_DT) {
+      accumulator -= FIXED_DT;
+      if (calcFn) {
+        try {
+          const out = calcFn(pos, target);
+          physicsStep(typeof out === 'number' && isFinite(out) ? out : 0);
+        } catch (e) {
+          addOutput('Runtime error in calculate(): ' + e.message, 'error');
+          stopSim(); return;
+        }
+      }
+    }
+    drawChart();
+    updateMetrics();
+    if (simRunning) animFrame = requestAnimationFrame(loop);
+  }
+
+  function setPill(state, label) {
+    const el = document.getElementById('sim-pill');
+    el.textContent = label;
+    el.className = 'tot-badge ' + (state === 'running' ? 'tot-badge--brand tot-badge--pulse' : 'tot-badge--soft');
+  }
+
+  function addOutput(text, cls) {
+    const d = document.createElement('div');
+    d.className = cls ? 'tot-console__line--' + cls : '';
+    d.textContent = text;
+    outputPanel.appendChild(d);
+    outputPanel.scrollTop = outputPanel.scrollHeight;
+  }
+  function clearOutput() { outputPanel.innerHTML = ''; }
+
+  // ─────────────────────────────────────────────────────────────
+  //  CHART
+  // ─────────────────────────────────────────────────────────────
+  const chartCanvas = document.getElementById('response-chart');
+  const chartCtx = chartCanvas.getContext('2d');
+
+  function resizeChartCanvas() {
+    const rect = chartCanvas.getBoundingClientRect();
+    chartCanvas.width = rect.width * devicePixelRatio;
+    chartCanvas.height = rect.height * devicePixelRatio;
+    chartCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    drawChart();
+  }
+
+  function drawChart() {
+    const w = chartCanvas.clientWidth, h = chartCanvas.clientHeight;
+    const c = chartCtx;
+    c.clearRect(0, 0, w, h);
+    c.fillStyle = css('--grey-050'); c.fillRect(0, 0, w, h);
+
+    const xMax = Math.max(WINDOW_SEC, simTime);
+    const xMin = xMax - WINDOW_SEC;
+    const margin = { left: 40, right: 12, top: 12, bottom: 20 };
+    const plotW = Math.max(1, w - margin.left - margin.right);
+    const plotH = Math.max(1, h - margin.top - margin.bottom);
+    const xFor = t => margin.left + ((t - xMin) / WINDOW_SEC) * plotW;
+    const yFor = v => margin.top + plotH - (v / 100) * plotH;
+
+    c.strokeStyle = css('--border'); c.lineWidth = 1;
+    c.font = '10px ' + css('--font-mono');
+    c.fillStyle = css('--text-muted');
+    c.textAlign = 'right'; c.textBaseline = 'middle';
+    for (let g = 0; g <= 4; g++) {
+      const v = g * 25, y = yFor(v);
+      c.beginPath(); c.moveTo(margin.left, y); c.lineTo(w - margin.right, y); c.stroke();
+      c.fillText(v.toFixed(0), margin.left - 6, y);
+    }
+    c.textAlign = 'center'; c.textBaseline = 'top';
+    for (let t = 0; t <= WINDOW_SEC; t += 2) {
+      const x = xFor(xMin + t);
+      c.fillText((xMin + t).toFixed(0) + 's', x, h - margin.bottom + 4);
+    }
+
+    function trace(key, color, dashed) {
+      if (history.length < 2) return;
+      c.save();
+      c.strokeStyle = color; c.lineWidth = 2; c.lineJoin = 'round';
+      if (dashed) c.setLineDash([5, 4]);
+      c.beginPath();
+      history.forEach((p, i) => {
+        const x = xFor(p.t), y = yFor(p[key]);
+        if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+      });
+      c.stroke();
+      c.restore();
+    }
+    trace('target', css('--grey-500'), true);
+    trace('pos', css('--tot-blue'), false);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  METRICS
+  // ─────────────────────────────────────────────────────────────
+  function updateMetrics() {
+    document.getElementById('m-pos').textContent = pos.toFixed(1) + '%';
+    document.getElementById('m-target').textContent = target.toFixed(1) + '%';
+    document.getElementById('m-overshoot').textContent = overshoot !== null ? overshoot.toFixed(1) + '%' : '—';
+    document.getElementById('m-settle').textContent = settleTime !== null ? settleTime.toFixed(2) + 's' : '—';
+
+    const bar = document.getElementById('output-bar'), val = document.getElementById('output-val');
+    const pct = Math.max(-1, Math.min(1, lastOutput)) * 50;
+    if (pct >= 0) { bar.style.marginLeft = '50%'; bar.style.width = pct + '%'; bar.style.background = 'var(--tot-blue)'; }
+    else { bar.style.marginLeft = (50 + pct) + '%'; bar.style.width = (-pct) + '%'; bar.style.background = 'var(--danger)'; }
+    val.textContent = lastOutput.toFixed(2);
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  EXAMPLES
+  // ─────────────────────────────────────────────────────────────
+  const examples = {
+    p:
+`// Proportional only — output scales with how far we are from
+// the target. Watch it settle noticeably below target: gravity
+// needs some standing error to produce standing output.
+double kP = 0.05;
+
+double calculate(double current, double target) {
+    double error = target - current;
+    return kP * error;
+}`,
+    pd:
+`// Add a derivative term to damp the approach (less overshoot),
+// but it does nothing for the steady-state gravity sag.
+double kP = 0.06;
+double kD = 0.012;
+double lastError = 0;
+
+double calculate(double current, double target) {
+    double error = target - current;
+    double derivative = (error - lastError) / 0.02;
+    lastError = error;
+    return kP * error + kD * derivative;
+}`,
+    pid:
+`// Add an integral term to slowly erase steady-state error.
+// Clamp the accumulator so it can't wind up unboundedly while
+// the mechanism is far from target.
+double kP = 0.05;
+double kI = 0.02;
+double kD = 0.01;
+double integral = 0;
+double lastError = 0;
+
+double calculate(double current, double target) {
+    double error = target - current;
+    integral += error * 0.02;
+    integral = Math.max(-50, Math.min(50, integral));
+    double derivative = (error - lastError) / 0.02;
+    lastError = error;
+    return kP * error + kI * integral + kD * derivative;
+}`,
+    pidf:
+`// Add a feedforward term sized to roughly cancel gravity on its
+// own, so P/I/D only have to correct for what kF misses.
+double kP = 0.05;
+double kI = 0.015;
+double kD = 0.01;
+double kF = 0.27;
+double integral = 0;
+double lastError = 0;
+
+double calculate(double current, double target) {
+    double error = target - current;
+    integral += error * 0.02;
+    integral = Math.max(-50, Math.min(50, integral));
+    double derivative = (error - lastError) / 0.02;
+    lastError = error;
+    return kF + kP * error + kI * integral + kD * derivative;
+}`
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  //  WIRING
+  // ─────────────────────────────────────────────────────────────
+  document.getElementById('preset-grid').addEventListener('click', e => {
+    const btn = e.target.closest('.tot-mode-btn');
+    if (!btn) return;
+    document.querySelectorAll('#preset-grid .tot-mode-btn').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    target = parseFloat(btn.dataset.preset);
+    document.getElementById('setpoint-slider').value = target;
+    document.getElementById('setpoint-val').textContent = target.toFixed(0) + '%';
+    onSetpointChanged();
+  });
+  document.getElementById('setpoint-slider').addEventListener('input', e => {
+    target = parseFloat(e.target.value);
+    document.getElementById('setpoint-val').textContent = target.toFixed(0) + '%';
+    document.querySelectorAll('#preset-grid .tot-mode-btn').forEach(b => b.classList.remove('is-active'));
+    onSetpointChanged();
+  });
+  document.getElementById('disturb-btn').addEventListener('click', () => {
+    vel += (Math.random() < 0.5 ? -1 : 1) * (25 + Math.random() * 20);
+  });
+  document.getElementById('mass-slider').addEventListener('input', e => {
+    plant.mass = parseFloat(e.target.value);
+    document.getElementById('mass-val').textContent = plant.mass.toFixed(2);
+  });
+  document.getElementById('gravity-slider').addEventListener('input', e => {
+    plant.gravity = parseFloat(e.target.value);
+    document.getElementById('gravity-val').textContent = plant.gravity.toFixed(1);
+  });
+  document.getElementById('friction-slider').addEventListener('input', e => {
+    plant.friction = parseFloat(e.target.value);
+    document.getElementById('friction-val').textContent = plant.friction.toFixed(2);
+  });
+  document.getElementById('reset-btn').addEventListener('click', () => { resetMechanism(); drawChart(); updateMetrics(); });
+  document.getElementById('run-btn').addEventListener('click', compileAndRun);
+  document.getElementById('stop-btn').addEventListener('click', stopSim);
+  document.querySelectorAll('.tot-code-toolbar [data-ex]').forEach(btn => {
+    btn.addEventListener('click', () => { editor.value = examples[btn.dataset.ex]; compileAndRun(); });
+  });
+  window.addEventListener('resize', resizeChartCanvas);
+
+  // ─────────────────────────────────────────────────────────────
+  //  INIT
+  // ─────────────────────────────────────────────────────────────
+  editor.value = examples.pid;
+  resetMechanism();
+  resizeChartCanvas();
+  updateMetrics();
+})();
+</script>
+</body>
+</html>
