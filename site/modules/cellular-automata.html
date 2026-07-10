@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cellular Automata Grid — That ONE Team Training Hub</title>
-<meta name="description" content="Write a Java-flavored int nextState(int state, int[] neighbors) rule and watch a whole grid of cells evolve — Conway's Game of Life, WireWorld, Brian's Brain, and your own multi-color rules.">
+<meta name="description" content="Write a Java-flavored nextState() rule and watch a whole grid of cells evolve — pick On/Off, N-state, or continuous RGB cells, then load Conway's Game of Life, WireWorld, a Cyclic Cellular Automaton, or a Gray-Scott reaction-diffusion rule.">
 <link rel="stylesheet" href="../assets/css/main.css">
 <link rel="stylesheet" href="../assets/css/module.css">
 <style>
-  .ca-palette { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 14px 0; }
+  .ca-palette { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 14px 0; }
   .ca-swatch {
     width: 30px; height: 30px; border-radius: var(--radius-sm);
     border: 2px solid var(--border-strong); cursor: pointer; padding: 0;
@@ -20,6 +20,8 @@
   #ca-canvas { image-rendering: pixelated; }
   .ca-pattern-row { display: flex; gap: 8px; align-items: center; }
   .ca-pattern-row select.tot-select { flex: 1; }
+  #rgb-brush { width: 44px; height: 32px; border: 2px solid var(--border-strong); border-radius: var(--radius-sm); cursor: pointer; padding: 2px; background: var(--surface); }
+  .ca-states-note { font-size: 11px; color: var(--text-muted); margin: 8px 0 0; }
 </style>
 </head>
 <body>
@@ -68,13 +70,14 @@
         <h1 class="tot-module-header__title">Cellular Automata Grid</h1>
         <p class="tot-module-header__lead">
           A grid of cells, each one a small state machine that only ever looks at its
-          eight neighbors. Implement
-          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">int nextState(int state, int[] neighbors) { ... }</code>
-          — called once per cell, every generation — and the whole grid evolves from
-          your rule alone. Conway's Game of Life is one rule out of many: load
-          WireWorld, Brian's Brain, or a two-color "Immigration" variant of Life from
-          the presets, stamp in a glider or a Gosper glider gun, or write a rule
-          nobody's seen before.
+          eight neighbors. Pick how much information a cell can hold — a single
+          On/Off bit, one of several discrete states, or a full continuous RGB
+          color — then implement <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">nextState(state, neighbors) { ... }</code>
+          and watch the whole grid evolve from your rule alone. Conway's Game of
+          Life, WireWorld, a Cyclic Cellular Automaton, and a Gray-Scott
+          reaction-diffusion system are all one rule apiece — load any of them,
+          stamp in a glider or a Gosper glider gun, or write something nobody's
+          seen before.
         </p>
       </div>
 
@@ -95,16 +98,29 @@
             </div>
 
             <div class="ca-palette" id="ca-palette"></div>
-            <p class="tot-hint-text">Click or drag on the grid to paint cells with the selected color above.</p>
+            <p class="tot-hint-text" id="ca-hint">Click or drag on the grid to paint cells with the selected color above.</p>
 
             <div class="tot-metrics-row">
               <div class="tot-metric-card"><div class="tot-metric-label">Gen</div><div class="tot-metric-value" id="m-gen">0</div></div>
-              <div class="tot-metric-card"><div class="tot-metric-label">Live Cells</div><div class="tot-metric-value" id="m-pop">0</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label" id="m-pop-label">Live Cells</div><div class="tot-metric-value" id="m-pop">0</div></div>
               <div class="tot-metric-card"><div class="tot-metric-label">Grid</div><div class="tot-metric-value" id="m-size">60×38</div></div>
               <div class="tot-metric-card"><div class="tot-metric-label">Speed</div><div class="tot-metric-value" id="m-speed">8/s</div></div>
             </div>
 
             <div class="tot-control-group">
+              <div class="tot-control-heading">State Model</div>
+              <div class="tot-mode-grid" id="model-grid" style="grid-template-columns:repeat(3,1fr);">
+                <button class="tot-mode-btn is-active" data-model="binary" type="button">On / Off</button>
+                <button class="tot-mode-btn" data-model="discrete" type="button">Discrete (N states)</button>
+                <button class="tot-mode-btn" data-model="rgb" type="button">Continuous RGB</button>
+              </div>
+              <div class="tot-control-row" id="states-count-row" style="margin-top:12px;display:none;">
+                <span class="tot-control-label">Number of states</span>
+                <input type="range" class="tot-range" id="states-slider" min="2" max="16" step="1" value="8">
+                <span class="tot-control-value" id="states-val">8</span>
+              </div>
+              <p class="ca-states-note" id="states-note"></p>
+
               <div class="tot-control-heading">Playback</div>
               <div style="display:flex;gap:8px;">
                 <button class="tot-btn tot-btn--sm tot-btn--primary" id="play-btn" type="button" style="flex:1;">▶ Play</button>
@@ -144,14 +160,17 @@
               <span class="tot-badge tot-badge--outline tot-badge--outline-on-dark">nextState(state, neighbors)</span>
             </div>
           </div>
-          <div class="tot-code-toolbar">
-            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="life" type="button">Conway's Life</button>
-            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="highlife" type="button">HighLife</button>
-            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="seeds" type="button">Seeds</button>
-            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="daynight" type="button">Day &amp; Night</button>
-            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="brian" type="button">Brian's Brain</button>
-            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="wireworld" type="button">WireWorld</button>
-            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="immigration" type="button">Immigration</button>
+          <div class="tot-code-toolbar" id="preset-toolbar">
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="life" data-model="binary" type="button">Conway's Life</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="highlife" data-model="binary" type="button">HighLife</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="seeds" data-model="binary" type="button">Seeds</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="daynight" data-model="binary" type="button">Day &amp; Night</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="cyclic" data-model="discrete" type="button">Cyclic CA</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="brian" data-model="discrete" type="button">Brian's Brain</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="wireworld" data-model="discrete" type="button">WireWorld</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="immigration" data-model="discrete" type="button">Immigration</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="reactiondiffusion" data-model="rgb" type="button">Reaction-Diffusion</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="continuouslife" data-model="rgb" type="button">Continuous Life</button>
           </div>
           <div class="tot-panel__body">
             <textarea class="tot-code-editor" id="code-editor" spellcheck="false"></textarea>
@@ -160,9 +179,11 @@
               <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">edits apply once you press Run Rule</span>
             </div>
             <div class="tot-console" id="console-output">
-              <div class="tot-console__line--info">// nextState(state, neighbors) is called once per cell, every generation.</div>
-              <div class="tot-console__line--info">// neighbors is the 8 Moore-neighborhood states: N,NE,E,SE,S,SW,W,NW.</div>
-              <div class="tot-console__line--info">// count(neighbors, s) counts how many of those 8 are in state s.</div>
+              <div class="tot-console__line--info">// nextState(...) is called once per cell, every generation.</div>
+              <div class="tot-console__line--info">// Its shape depends on the State Model: On/Off and Discrete use</div>
+              <div class="tot-console__line--info">//   int nextState(int state, int[] neighbors) { ... }</div>
+              <div class="tot-console__line--info">// Continuous RGB uses</div>
+              <div class="tot-console__line--info">//   int[] nextState(int[] state, int[][] neighbors) { ... }</div>
               <div class="tot-console__line--info">// Pick a preset above, or write your own, then press Run Rule.</div>
             </div>
           </div>
@@ -179,30 +200,39 @@
           Every cell only ever knows its own state and its eight neighbors' states —
           there's no global logic anywhere. Start with Conway's Life and stamp in a
           Glider or the Gosper Glider Gun to see motion emerge from nothing but
-          birth/survival counts. Then switch to WireWorld (a 4-state rule used to build
-          real logic circuits out of cells) or Brian's Brain (an oscillating 3-state
-          rule with no stable still lifes at all), and notice that both run through the
-          exact same grid and playback controls — only <code>nextState()</code>
-          changed. Finish by writing your own multi-color rule: the Immigration preset
-          is a two-color version of Life where a newborn cell inherits the majority
-          color of the three parents that created it.
+          birth/survival counts. Switch the State Model to Discrete and try WireWorld
+          (a 4-state rule used to build real logic circuits out of cells), Brian's
+          Brain (an oscillating 3-state rule with no stable still lifes at all), or
+          Cyclic CA (drag the "Number of states" slider — the classic result for
+          this rule is a field of slowly rotating spirals, and it's the same rule at
+          any state count from 2 to 16). Finish in Continuous RGB, where a cell's
+          state is a full <code>[r, g, b]</code> color instead of a small integer:
+          Reaction-Diffusion runs a real Gray-Scott chemical simulation, and
+          Continuous Life is a tiny taste of the "Lenia" family of smooth, organic
+          automata. Same grid, same playback controls, same eight neighbors — only
+          <code>nextState()</code> and what a "state" means ever change.
         </p>
       </div>
 
       <div class="tot-card tot-card--pad-lg">
         <div class="tot-section-heading">
           <div class="tot-section-heading__eyebrow">Reference</div>
-          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">nextState(state, neighbors) API</h2>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">nextState() API</h2>
         </div>
         <dl class="tot-reference-grid">
-          <dt>state</dt><dd>The current cell's state, an integer from 0 (background) up to however many colors the active rule uses.</dd>
-          <dt>neighbors</dt><dd>An 8-element array of the Moore neighborhood's states, in order N, NE, E, SE, S, SW, W, NW.</dd>
-          <dt>count(neighbors, s)</dt><dd>Helper available inside your rule — returns how many of the 8 neighbors are in state s.</dd>
+          <dt>State Model</dt><dd>Chooses what a "state" is: On/Off is a single 0/1 bit, Discrete is an integer 0..N-1 (N set by the slider), Continuous RGB is a full [r, g, b] color, each channel 0-255.</dd>
+          <dt>int nextState(int state, int[] neighbors)</dt><dd>The signature for On/Off and Discrete rules. neighbors is the 8 Moore-neighborhood states, in order N, NE, E, SE, S, SW, W, NW.</dd>
+          <dt>int[] nextState(int[] state, int[][] neighbors)</dt><dd>The signature for Continuous RGB rules. state and each of the 8 neighbors are [r, g, b] triples; return the cell's next color as a triple too.</dd>
+          <dt>count(neighbors, s)</dt><dd>Helper for On/Off and Discrete rules — returns how many of the 8 neighbors are in state s.</dd>
+          <dt>avg(neighbors, ch)</dt><dd>Helper for Continuous RGB rules — returns the average of channel ch (0, 1, or 2) across the 8 neighbors.</dd>
+          <dt>clamp(v, lo, hi)</dt><dd>Helper available everywhere — clamps v between lo and hi (defaults to 0 and 255) and rounds to an integer.</dd>
+          <dt>STATES</dt><dd>Available inside Discrete rules — the current "number of states" slider value, so a rule like Cyclic CA can use (state + 1) % STATES generically.</dd>
           <dt>return value</dt><dd>The state this cell becomes next generation. Every cell in the grid is evaluated against the same old generation, so order never matters.</dd>
-          <dt>Run Rule</dt><dd>Recompiles nextState(...) and (if checked) applies it going forward as the grid steps.</dd>
+          <dt>Run Rule</dt><dd>Recompiles nextState(...) and applies it going forward as the grid steps.</dd>
           <dt>wrap edges</dt><dd>When on, the grid is toroidal — the right edge's neighbor is the left edge, and the bottom's is the top.</dd>
-          <dt>palette</dt><dd>Swatches match the active rule's state count. Pick one, then click/drag on the grid to paint cells with that state.</dd>
-          <dt>Famous Patterns</dt><dd>Stamps a known still life, oscillator, spaceship, or gun onto the center of the grid (clears the board first).</dd>
+          <dt>palette / brush</dt><dd>On/Off and Discrete show color swatches to paint with; Continuous RGB shows a native color picker so you can paint any [r, g, b] value directly.</dd>
+          <dt>Randomize</dt><dd>Re-seeds the board using the active rule's own starting condition — random noise for most rules, a perturbed patch for Reaction-Diffusion.</dd>
+          <dt>Famous Patterns</dt><dd>Stamps a known still life, oscillator, spaceship, gun, or circuit onto the center of the grid (clears the board first).</dd>
         </dl>
       </div>
 
@@ -238,53 +268,111 @@
   "use strict";
 
   // ─────────────────────────────────────────────────────────────
-  //  GRID
+  //  GRID — always stored as 3 channels/cell so every state model
+  //  (binary, discrete, continuous RGB) shares one buffer + engine.
+  //  binary/discrete only ever use channel 0; rgb uses all three.
   // ─────────────────────────────────────────────────────────────
   const COLS = 60, ROWS = 38, CELL = 12;
-  let grid = new Uint8Array(COLS * ROWS);
-  let nextGrid = new Uint8Array(COLS * ROWS);
+  let grid = new Uint8ClampedArray(COLS * ROWS * 3);
+  let nextGrid = new Uint8ClampedArray(COLS * ROWS * 3);
   let generation = 0;
   let wrapEdges = true;
   let speed = 8;
   let playing = false;
   let timer = null;
-  let currentBrush = 1;
+  let currentModel = 'binary';   // 'binary' | 'discrete' | 'rgb'
+  let statesCount = 8;           // only meaningful for variableStates presets
+  let currentBrush = 1;          // binary/discrete brush state
+  let currentBrushRGB = [255, 255, 255]; // rgb brush color
   let ruleFn = null;
 
   const canvas = document.getElementById('ca-canvas');
   const ctx = canvas.getContext('2d');
 
+  function idxOf(x, y) { return (y * COLS + x) * 3; }
+
   const DIRS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]]; // N,NE,E,SE,S,SW,W,NW
 
-  function computeNeighbors(x, y) {
+  function neighborCoords(x, y, i) {
+    let nx = x + DIRS[i][0], ny = y + DIRS[i][1];
+    if (wrapEdges) {
+      nx = (nx + COLS) % COLS;
+      ny = (ny + ROWS) % ROWS;
+    }
+    return (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) ? { nx: nx, ny: ny } : null;
+  }
+
+  function computeNeighborsScalar(x, y) {
     const arr = new Array(8);
     for (let i = 0; i < 8; i++) {
-      let nx = x + DIRS[i][0], ny = y + DIRS[i][1];
-      if (wrapEdges) {
-        nx = (nx + COLS) % COLS;
-        ny = (ny + ROWS) % ROWS;
-      }
-      arr[i] = (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) ? grid[ny * COLS + nx] : 0;
+      const n = neighborCoords(x, y, i);
+      arr[i] = n ? grid[idxOf(n.nx, n.ny)] : 0;
     }
     return arr;
   }
 
+  function computeNeighborsRGB(x, y) {
+    const arr = new Array(8);
+    for (let i = 0; i < 8; i++) {
+      const n = neighborCoords(x, y, i);
+      if (n) {
+        const idx = idxOf(n.nx, n.ny);
+        arr[i] = [grid[idx], grid[idx + 1], grid[idx + 2]];
+      } else {
+        arr[i] = [0, 0, 0];
+      }
+    }
+    return arr;
+  }
+
+  function effectiveStatesCount() {
+    return currentPreset.variableStates ? statesCount : currentPreset.states;
+  }
+
+  function clampByte(v) {
+    v = Math.round(v);
+    return v < 0 ? 0 : (v > 255 ? 255 : v);
+  }
+
   function stepGeneration() {
     if (!ruleFn) return;
-    const maxState = currentPreset.colors.length - 1;
-    for (let y = 0; y < ROWS; y++) {
-      for (let x = 0; x < COLS; x++) {
-        const idx = y * COLS + x;
-        let ns;
-        try {
-          ns = ruleFn(grid[idx], computeNeighbors(x, y));
-        } catch (err) {
-          stopPlaying();
-          addOutput('✗ error: ' + err.message, 'error');
-          return;
+    if (currentModel === 'rgb') {
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          const idx = idxOf(x, y);
+          const state = [grid[idx], grid[idx + 1], grid[idx + 2]];
+          let ns;
+          try {
+            ns = ruleFn(state, computeNeighborsRGB(x, y));
+          } catch (err) {
+            stopPlaying();
+            addOutput('✗ error: ' + err.message, 'error');
+            return;
+          }
+          if (!Array.isArray(ns)) ns = [0, 0, 0];
+          nextGrid[idx] = clampByte(ns[0]);
+          nextGrid[idx + 1] = clampByte(ns[1]);
+          nextGrid[idx + 2] = clampByte(ns[2]);
         }
-        ns = (typeof ns === 'number' && isFinite(ns)) ? (ns | 0) : 0;
-        nextGrid[idx] = Math.max(0, Math.min(maxState, ns));
+      }
+    } else {
+      const maxState = effectiveStatesCount() - 1;
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          const idx = idxOf(x, y);
+          let ns;
+          try {
+            ns = ruleFn(grid[idx], computeNeighborsScalar(x, y));
+          } catch (err) {
+            stopPlaying();
+            addOutput('✗ error: ' + err.message, 'error');
+            return;
+          }
+          ns = (typeof ns === 'number' && isFinite(ns)) ? (ns | 0) : 0;
+          nextGrid[idx] = Math.max(0, Math.min(maxState, ns));
+          nextGrid[idx + 1] = 0;
+          nextGrid[idx + 2] = 0;
+        }
       }
     }
     const tmp = grid; grid = nextGrid; nextGrid = tmp;
@@ -292,13 +380,30 @@
     updateMetrics();
   }
 
+  function activeColors() {
+    return currentPreset.variableStates ? discretePalette(effectiveStatesCount()) : currentPreset.colors;
+  }
+
   function draw() {
-    const colors = currentPreset.colors;
+    if (currentModel === 'rgb') {
+      const colorize = currentPreset.colorize;
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          const idx = idxOf(x, y);
+          let r = grid[idx], g = grid[idx + 1], b = grid[idx + 2];
+          if (colorize) { const c = colorize([r, g, b]); r = c[0]; g = c[1]; b = c[2]; }
+          ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+          ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+        }
+      }
+      return;
+    }
+    const colors = activeColors();
     ctx.fillStyle = colors[0];
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     for (let y = 0; y < ROWS; y++) {
       for (let x = 0; x < COLS; x++) {
-        const s = grid[y * COLS + x];
+        const s = grid[idxOf(x, y)];
         if (s === 0) continue;
         ctx.fillStyle = colors[s] || colors[colors.length - 1];
         ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
@@ -308,9 +413,18 @@
 
   function updateMetrics() {
     document.getElementById('m-gen').textContent = generation;
-    let pop = 0;
-    for (let i = 0; i < grid.length; i++) if (grid[i] !== 0) pop++;
-    document.getElementById('m-pop').textContent = pop;
+    const popLabel = document.getElementById('m-pop-label');
+    if (currentModel === 'rgb') {
+      popLabel.textContent = 'Avg Value';
+      let sum = 0;
+      for (let i = 0; i < grid.length; i++) sum += grid[i];
+      document.getElementById('m-pop').textContent = Math.round(sum / grid.length);
+    } else {
+      popLabel.textContent = 'Live Cells';
+      let pop = 0;
+      for (let i = 0; i < grid.length; i += 3) if (grid[i] !== 0) pop++;
+      document.getElementById('m-pop').textContent = pop;
+    }
     document.getElementById('m-size').textContent = COLS + '×' + ROWS;
     document.getElementById('m-speed').textContent = speed + '/s';
     document.getElementById('speed-val').textContent = speed + '/s';
@@ -319,11 +433,14 @@
   // ─────────────────────────────────────────────────────────────
   //  JAVA -> JS TRANSPILER (constrained subset used by nextState())
   //  Mirrors the approach used by the Filters module's transpileAndBuild —
-  //  see /site/README.md, "Executing student code."
+  //  see /site/README.md, "Executing student code." Supports two shapes:
+  //    int   nextState(int state, int[] neighbors)        (binary/discrete)
+  //    int[] nextState(int[] state, int[][] neighbors)    (continuous rgb)
   // ─────────────────────────────────────────────────────────────
   function transpileBody(body) {
     let b = body;
     b = b.replace(/for\s*\(\s*(double|int|float|long)\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $2 of $3)');
+    b = b.replace(/new\s+(?:double|int|float|long)\s*\[\s*\]\s*\{([^}]*)\}/g, '[$1]');
     b = b.replace(/new\s+(double|int|float|long)\s*\[([^\]]+)\]/g, 'new Array($2).fill(0)');
     b = b.replace(/\b(double|int|float|long)\s*\[\s*\]\s*(\w+)\s*=/g, 'let $2 =');
     b = b.replace(/\b(double|int|float|long)\s*\[\s*\]\s*(\w+)\s*;/g, 'let $2;');
@@ -334,13 +451,17 @@
     return b;
   }
 
-  // Builds a nextState(state, neighbors) closure from student code shaped like:
-  //   int nextState(int state, int[] neighbors) { ... return ...; }
-  // with a `count(neighbors, s)` helper available inside it.
-  function transpileAndBuild(javaCode) {
-    const sigRegex = /int\s+nextState\s*\(\s*int\s+(\w+)\s*,\s*int\s*\[\s*\]\s*(\w+)\s*\)\s*\{/;
+  function transpileAndBuild(javaCode, model, states) {
+    const isRgb = model === 'rgb';
+    const sigRegex = isRgb
+      ? /int\s*\[\s*\]\s+nextState\s*\(\s*int\s*\[\s*\]\s+(\w+)\s*,\s*int\s*\[\s*\]\s*\[\s*\]\s*(\w+)\s*\)\s*\{/
+      : /int\s+nextState\s*\(\s*int\s+(\w+)\s*,\s*int\s*\[\s*\]\s*(\w+)\s*\)\s*\{/;
     const sigMatch = javaCode.match(sigRegex);
-    if (!sigMatch) throw new Error("Couldn't find a method matching:  int nextState(int state, int[] neighbors) { ... }");
+    if (!sigMatch) {
+      throw new Error(isRgb
+        ? "Couldn't find a method matching:  int[] nextState(int[] state, int[][] neighbors) { ... }"
+        : "Couldn't find a method matching:  int nextState(int state, int[] neighbors) { ... }");
+    }
     const stateParam = sigMatch[1], neighborsParam = sigMatch[2];
     const startIdx = sigMatch.index + sigMatch[0].length;
     let depth = 1, i = startIdx;
@@ -353,10 +474,13 @@
     const rawBody = javaCode.slice(startIdx, i);
     const jsPreamble = transpileBody(preamble);
     const jsBody = transpileBody(rawBody);
-    const factory = new Function(
-      '"use strict";\n' +
+    const helpers =
       'function count(neighbors, s) { var c = 0; for (var i = 0; i < neighbors.length; i++) { if (neighbors[i] === s) c++; } return c; }\n' +
-      jsPreamble +
+      'function avg(neighbors, ch) { var s = 0; for (var i = 0; i < neighbors.length; i++) { s += neighbors[i][ch]; } return s / neighbors.length; }\n' +
+      'function clamp(v, lo, hi) { if (lo === undefined) lo = 0; if (hi === undefined) hi = 255; v = Math.round(v); return v < lo ? lo : (v > hi ? hi : v); }\n' +
+      (isRgb ? '' : 'var STATES = ' + states + ';\n');
+    const factory = new Function(
+      '"use strict";\n' + helpers + jsPreamble +
       '\nreturn function(' + stateParam + ', ' + neighborsParam + ') {\n' + jsBody + '\n};'
     );
     return factory();
@@ -365,8 +489,7 @@
   function runRule() {
     const code = document.getElementById('code-editor').value;
     try {
-      const fn = transpileAndBuild(code);
-      if (typeof fn !== 'function') throw new Error("Couldn't find a method matching:  int nextState(int state, int[] neighbors) { ... }");
+      const fn = transpileAndBuild(code, currentModel, effectiveStatesCount());
       ruleFn = fn;
       clearOutput();
       addOutput('✓ compiled — nextState() is now driving the grid.', 'ok');
@@ -421,14 +544,53 @@
   };
 
   // ─────────────────────────────────────────────────────────────
+  //  SEED / RANDOMIZE HELPERS (per-preset starting conditions)
+  // ─────────────────────────────────────────────────────────────
+  function clearGrid() { grid.fill(0); nextGrid.fill(0); }
+
+  function discretePalette(n) {
+    const colors = ['#f6f7f7'];
+    for (let i = 1; i < n; i++) colors.push('hsl(' + Math.round(360 * (i - 1) / Math.max(1, n - 1)) + ', 70%, 45%)');
+    return colors;
+  }
+
+  function randomBinary() {
+    for (let i = 0; i < grid.length; i += 3) { grid[i] = Math.random() < 0.35 ? 1 : 0; grid[i + 1] = 0; grid[i + 2] = 0; }
+  }
+  function randomDiscrete() {
+    const n = effectiveStatesCount();
+    for (let i = 0; i < grid.length; i += 3) { grid[i] = Math.floor(Math.random() * n); grid[i + 1] = 0; grid[i + 2] = 0; }
+  }
+  function randomGrayscale() {
+    for (let i = 0; i < grid.length; i += 3) { const v = Math.floor(Math.random() * 256); grid[i] = v; grid[i + 1] = v; grid[i + 2] = v; }
+  }
+  function seedReactionDiffusion() {
+    for (let i = 0; i < grid.length; i += 3) { grid[i] = 255; grid[i + 1] = 0; grid[i + 2] = 0; }
+    const cx = Math.floor(COLS / 2), cy = Math.floor(ROWS / 2), r = 4;
+    for (let y = cy - r; y <= cy + r; y++) {
+      for (let x = cx - r; x <= cx + r; x++) {
+        if (x < 0 || x >= COLS || y < 0 || y >= ROWS) continue;
+        if (Math.random() < 0.75) {
+          const idx = idxOf(x, y);
+          grid[idx] = Math.floor(90 + Math.random() * 40);
+          grid[idx + 1] = Math.floor(170 + Math.random() * 60);
+        }
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
   //  RULE PRESETS
   // ─────────────────────────────────────────────────────────────
   const PRESETS = {
     life: {
       label: "Conway's Life",
+      model: 'binary',
       states: 2,
       colors: ['#f6f7f7', '#0095C8'],
       patterns: LIFE_PATTERNS,
+      seed: clearGrid,
+      randomize: randomBinary,
       code:
 `// Conway's Game of Life — B3/S23
 // state 0 = dead, state 1 = alive
@@ -443,9 +605,12 @@ int nextState(int state, int[] neighbors) {
     },
     highlife: {
       label: 'HighLife',
+      model: 'binary',
       states: 2,
       colors: ['#f6f7f7', '#0095C8'],
       patterns: LIFE_PATTERNS,
+      seed: clearGrid,
+      randomize: randomBinary,
       code:
 `// HighLife — B36/S23 (like Life, but cells are also born with 6 neighbors)
 // state 0 = dead, state 1 = alive
@@ -460,9 +625,12 @@ int nextState(int state, int[] neighbors) {
     },
     seeds: {
       label: 'Seeds',
+      model: 'binary',
       states: 2,
       colors: ['#f6f7f7', '#7c3aed'],
       patterns: LIFE_PATTERNS,
+      seed: clearGrid,
+      randomize: randomBinary,
       code:
 `// Seeds — B2/S (every live cell dies every step; only births matter)
 // state 0 = dead, state 1 = alive
@@ -475,9 +643,12 @@ int nextState(int state, int[] neighbors) {
     },
     daynight: {
       label: 'Day & Night',
+      model: 'binary',
       states: 2,
       colors: ['#f6f7f7', '#059669'],
       patterns: LIFE_PATTERNS,
+      seed: clearGrid,
+      randomize: randomBinary,
       code:
 `// Day & Night — B3678/S34678
 // state 0 = dead, state 1 = alive
@@ -492,9 +663,12 @@ int nextState(int state, int[] neighbors) {
     },
     brian: {
       label: "Brian's Brain",
+      model: 'discrete',
       states: 3,
       colors: ['#f6f7f7', '#f59e0b', '#94a3b8'],
       patterns: {},
+      seed: clearGrid,
+      randomize: randomDiscrete,
       code:
 `// Brian's Brain — a 3-state rule with no stable still lifes at all
 // state 0 = off, state 1 = firing, state 2 = dying (refractory)
@@ -508,9 +682,12 @@ int nextState(int state, int[] neighbors) {
     },
     wireworld: {
       label: 'WireWorld',
+      model: 'discrete',
       states: 4,
       colors: ['#f6f7f7', '#eab308', '#3b82f6', '#ef4444'],
       patterns: WIREWORLD_PATTERNS,
+      seed: clearGrid,
+      randomize: randomDiscrete,
       code:
 `// WireWorld — a 4-state rule used to build logic circuits out of cells
 // state 0 = empty, state 1 = wire, state 2 = electron head, state 3 = electron tail
@@ -526,9 +703,12 @@ int nextState(int state, int[] neighbors) {
     },
     immigration: {
       label: 'Immigration',
+      model: 'discrete',
       states: 3,
       colors: ['#f6f7f7', '#0095C8', '#f472b6'],
       patterns: LIFE_PATTERNS,
+      seed: clearGrid,
+      randomize: randomDiscrete,
       code:
 `// Immigration — a two-color variant of Life
 // state 0 = dead, state 1 = color A, state 2 = color B
@@ -547,10 +727,110 @@ int nextState(int state, int[] neighbors) {
     return 0;
 }`,
     },
+    cyclic: {
+      label: 'Cyclic CA',
+      model: 'discrete',
+      variableStates: true,
+      patterns: {},
+      seed: randomDiscrete,
+      randomize: randomDiscrete,
+      code:
+`// Cyclic Cellular Automaton (Fisch/Griffeath) — the classic "many discrete
+// states" rule. state is 0..STATES-1, where STATES comes from the "Number
+// of states" slider on the left. A cell advances to its successor state
+// once enough neighbors have already gotten there. Try different STATES
+// values (2 to 16) — larger values tend to produce slow rotating spirals.
+
+int nextState(int state, int[] neighbors) {
+    int threshold = 3;
+    int next = (state + 1) % STATES;
+    int ready = count(neighbors, next);
+    return (ready >= threshold) ? next : state;
+}`,
+    },
+    reactiondiffusion: {
+      label: 'Reaction-Diffusion',
+      model: 'rgb',
+      patterns: {},
+      defaultBrush: [255, 0, 0],
+      seed: seedReactionDiffusion,
+      randomize: seedReactionDiffusion,
+      colorize: function (s) {
+        const t = Math.min(1, (s[1] / 255) * 1.6);
+        return [
+          Math.round(255 + t * (20 - 255)),
+          Math.round(250 + t * (70 - 250)),
+          Math.round(230 + t * (95 - 230)),
+        ];
+      },
+      code:
+`// Reaction-Diffusion (Gray-Scott model) — two virtual chemicals U and V
+// diffuse across the grid and react with each other, forming coral, spot,
+// and worm-like patterns depending on the feed/kill rates F and k.
+// state[0] = U (0-255), state[1] = V (0-255), state[2] is unused.
+// neighbors order: N, NE, E, SE, S, SW, W, NW.
+
+int[] nextState(int[] state, int[][] neighbors) {
+    double u = state[0] / 255.0;
+    double v = state[1] / 255.0;
+
+    // standard 9-point Gray-Scott Laplacian: orthogonal neighbors weight
+    // 0.2, diagonal neighbors weight 0.05, center weight -1
+    double orthU = neighbors[0][0] + neighbors[2][0] + neighbors[4][0] + neighbors[6][0];
+    double diagU = neighbors[1][0] + neighbors[3][0] + neighbors[5][0] + neighbors[7][0];
+    double lapU = 0.2 * (orthU / 255.0) + 0.05 * (diagU / 255.0) - u;
+
+    double orthV = neighbors[0][1] + neighbors[2][1] + neighbors[4][1] + neighbors[6][1];
+    double diagV = neighbors[1][1] + neighbors[3][1] + neighbors[5][1] + neighbors[7][1];
+    double lapV = 0.2 * (orthV / 255.0) + 0.05 * (diagV / 255.0) - v;
+
+    double Du = 1.0, Dv = 0.5, F = 0.014, k = 0.054;
+    double reaction = u * v * v;
+
+    double newU = u + (Du * lapU - reaction + F * (1 - u));
+    double newV = v + (Dv * lapV + reaction - (F + k) * v);
+
+    return new int[]{ clamp(newU * 255), clamp(newV * 255), 0 };
+}`,
+    },
+    continuouslife: {
+      label: 'Continuous Life',
+      model: 'rgb',
+      patterns: {},
+      defaultBrush: [255, 255, 255],
+      seed: randomGrayscale,
+      randomize: randomGrayscale,
+      code:
+`// Continuous Life — a smooth grayscale relative of Conway's Life, and a
+// tiny taste of the "Lenia" family of continuous cellular automata.
+// state[0..2] all track the same brightness, 0 (dark) to 255 (bright).
+
+int[] nextState(int[] state, int[][] neighbors) {
+    double a = state[0] / 255.0;
+    double m = avg(neighbors, 0) / 255.0;   // local neighborhood brightness
+
+    // bell-curve growth centered on m0 (like Lenia's growth function) —
+    // cells grow when their neighborhood average is near m0, shrink otherwise
+    double m0 = 0.27, sigma = 0.09;
+    double growth = 2.0 * Math.exp(-((m - m0) * (m - m0)) / (2 * sigma * sigma)) - 1.0;
+
+    double next = a + 0.15 * growth;
+    int v = clamp(next * 255);
+    return new int[]{ v, v, v };
+}`,
+    },
   };
 
   let currentPresetKey = 'life';
   let currentPreset = PRESETS.life;
+
+  function rgbToHex(rgb) {
+    return '#' + rgb.map(function (v) { return clampByte(v).toString(16).padStart(2, '0'); }).join('');
+  }
+  function hexToRgb(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
 
   // ─────────────────────────────────────────────────────────────
   //  PALETTE + PATTERN UI
@@ -558,7 +838,22 @@ int nextState(int state, int[] neighbors) {
   function renderPalette() {
     const wrap = document.getElementById('ca-palette');
     wrap.innerHTML = '';
-    currentPreset.colors.forEach(function (color, i) {
+    if (currentModel === 'rgb') {
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.id = 'rgb-brush';
+      input.value = rgbToHex(currentBrushRGB);
+      input.title = 'brush color';
+      input.addEventListener('input', function () { currentBrushRGB = hexToRgb(input.value); });
+      wrap.appendChild(input);
+      const label = document.createElement('span');
+      label.style.fontSize = '12px';
+      label.style.color = 'var(--text-muted)';
+      label.textContent = 'pick any RGB color, then click/drag on the grid to paint';
+      wrap.appendChild(label);
+      return;
+    }
+    activeColors().forEach(function (color, i) {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'ca-swatch' + (i === currentBrush ? ' is-active' : '');
@@ -596,37 +891,78 @@ int nextState(int state, int[] neighbors) {
     });
   }
 
+  function updateStatesUI() {
+    const row = document.getElementById('states-count-row');
+    const note = document.getElementById('states-note');
+    if (currentModel === 'discrete' && currentPreset.variableStates) {
+      row.style.display = 'flex';
+      note.textContent = '';
+    } else {
+      row.style.display = 'none';
+      note.textContent = (currentModel === 'discrete') ? ('This rule uses a fixed ' + currentPreset.states + ' states.') : '';
+    }
+  }
+
+  function refreshToolbar() {
+    document.querySelectorAll('#preset-toolbar [data-preset]').forEach(function (btn) {
+      btn.style.display = (btn.dataset.model === currentModel) ? '' : 'none';
+      btn.classList.toggle('is-active', btn.dataset.preset === currentPresetKey);
+    });
+    document.querySelectorAll('#model-grid [data-model]').forEach(function (btn) {
+      btn.classList.toggle('is-active', btn.dataset.model === currentModel);
+    });
+  }
+
   function loadPreset(key) {
     currentPresetKey = key;
     currentPreset = PRESETS[key];
-    currentBrush = currentPreset.states > 1 ? 1 : 0;
+    currentModel = currentPreset.model;
+    currentBrush = (currentPreset.variableStates || currentPreset.states > 1) ? 1 : 0;
+    currentBrushRGB = currentPreset.defaultBrush || [255, 255, 255];
     document.getElementById('code-editor').value = currentPreset.code;
     document.getElementById('rule-pill').textContent = currentPreset.label;
+    updateStatesUI();
+    refreshToolbar();
+    clearGrid();
+    currentPreset.seed();
+    generation = 0;
+    runRule();
     renderPalette();
     renderPatternOptions();
-    grid.fill(0); nextGrid.fill(0); generation = 0;
-    runRule();
     updateMetrics();
     draw();
   }
 
-  document.querySelectorAll('.tot-code-toolbar [data-preset]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('.tot-code-toolbar [data-preset]').forEach(function (b) { b.classList.remove('is-active'); });
-      btn.classList.add('is-active');
-      loadPreset(btn.dataset.preset);
-    });
+  const MODEL_DEFAULTS = { binary: 'life', discrete: 'cyclic', rgb: 'reactiondiffusion' };
+  document.querySelectorAll('#model-grid [data-model]').forEach(function (btn) {
+    btn.addEventListener('click', function () { loadPreset(MODEL_DEFAULTS[btn.dataset.model]); });
+  });
+
+  document.querySelectorAll('#preset-toolbar [data-preset]').forEach(function (btn) {
+    btn.addEventListener('click', function () { loadPreset(btn.dataset.preset); });
+  });
+
+  document.getElementById('states-slider').addEventListener('input', function (e) {
+    statesCount = parseInt(e.target.value, 10);
+    document.getElementById('states-val').textContent = statesCount;
+    const maxState = statesCount - 1;
+    for (let i = 0; i < grid.length; i += 3) { if (grid[i] > maxState) grid[i] = maxState; }
+    renderPalette();
+    runRule();
+    updateMetrics();
+    draw();
   });
 
   document.getElementById('stamp-btn').addEventListener('click', function () {
     const sel = document.getElementById('pattern-select');
     const pattern = (currentPreset.patterns || {})[sel.value];
     if (!pattern) return;
-    grid.fill(0); nextGrid.fill(0); generation = 0;
+    clearGrid();
+    generation = 0;
     const offX = Math.floor((COLS - pattern.w) / 2), offY = Math.floor((ROWS - pattern.h) / 2);
     pattern.cells.forEach(function (c) {
       const x = offX + c[0], y = offY + c[1];
-      if (x >= 0 && x < COLS && y >= 0 && y < ROWS) grid[y * COLS + x] = c[2];
+      if (x >= 0 && x < COLS && y >= 0 && y < ROWS) grid[idxOf(x, y)] = c[2];
     });
     updateMetrics();
     draw();
@@ -650,7 +986,13 @@ int nextState(int state, int[] neighbors) {
   }
 
   function setCell(cx, cy) {
-    if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) grid[cy * COLS + cx] = currentBrush;
+    if (cx < 0 || cx >= COLS || cy < 0 || cy >= ROWS) return;
+    const idx = idxOf(cx, cy);
+    if (currentModel === 'rgb') {
+      grid[idx] = currentBrushRGB[0]; grid[idx + 1] = currentBrushRGB[1]; grid[idx + 2] = currentBrushRGB[2];
+    } else {
+      grid[idx] = currentBrush;
+    }
   }
 
   function lineCells(x0, y0, x1, y1) {
@@ -734,13 +1076,14 @@ int nextState(int state, int[] neighbors) {
     wrapEdges = e.target.checked;
   });
   document.getElementById('random-btn').addEventListener('click', function () {
-    for (let i = 0; i < grid.length; i++) grid[i] = Math.random() < 0.35 ? 1 : 0;
+    currentPreset.randomize();
     generation = 0;
     updateMetrics();
     draw();
   });
   document.getElementById('clear-btn').addEventListener('click', function () {
-    grid.fill(0); nextGrid.fill(0); generation = 0;
+    clearGrid();
+    generation = 0;
     updateMetrics();
     draw();
   });
@@ -748,7 +1091,6 @@ int nextState(int state, int[] neighbors) {
   // ─────────────────────────────────────────────────────────────
   //  INIT
   // ─────────────────────────────────────────────────────────────
-  document.querySelector('.tot-code-toolbar [data-preset="life"]').classList.add('is-active');
   loadPreset('life');
 })();
 </script>
