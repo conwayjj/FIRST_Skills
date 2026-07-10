@@ -65,3 +65,28 @@
 
   --focus-ring:       var(--blue-400);
 }
+
+/* ============================================================
+   Dark mode — toggled by adding data-theme="dark" to <html>
+   (see assets/js/theme.js). Night mode: black surface, white text.
+   ============================================================ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --grey-050: #0c0d0e;
+  --grey-100: #17181a;
+  --grey-200: #2a2b2d;
+
+  --brand-strong:     var(--blue-400);
+
+  --text-strong:      var(--tot-white);
+  --text-body:        #e7e8e9;
+  --text-muted:       #a7a8aa;
+
+  --surface:          var(--tot-black);
+  --surface-alt:      #0c0d0e;
+  --surface-sunken:   #17181a;
+
+  --border:           #2a2b2d;
+  --border-strong:    #3f4041;
+}
