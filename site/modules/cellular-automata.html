@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{if(localStorage.getItem('tot-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}</script>
 <title>Cellular Automata Grid — That ONE Team Training Hub</title>
 <meta name="description" content="Write a Java-flavored nextState() rule and watch a whole grid of cells evolve — pick On/Off, N-state, or continuous RGB cells, then load Conway's Game of Life, WireWorld, a Cyclic Cellular Automaton, or a Gray-Scott reaction-diffusion rule.">
 <link rel="stylesheet" href="../assets/css/main.css">
@@ -68,17 +69,6 @@
           <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
         </div>
         <h1 class="tot-module-header__title">Cellular Automata Grid</h1>
-        <p class="tot-module-header__lead">
-          A grid of cells, each one a small state machine that only ever looks at its
-          eight neighbors. Pick how much information a cell can hold — a single
-          On/Off bit, one of several discrete states, or a full continuous RGB
-          color — then implement <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">nextState(state, neighbors) { ... }</code>
-          and watch the whole grid evolve from your rule alone. Conway's Game of
-          Life, WireWorld, a Cyclic Cellular Automaton, and a Gray-Scott
-          reaction-diffusion system are all one rule apiece — load any of them,
-          stamp in a glider or a Gosper glider gun, or write something nobody's
-          seen before.
-        </p>
       </div>
 
       <div class="tot-workbench">
@@ -174,7 +164,7 @@
           </div>
           <div class="tot-panel__body">
             <textarea class="tot-code-editor" id="code-editor" spellcheck="false"></textarea>
-            <div class="tot-code-toolbar" style="border-top:1px solid var(--border);border-bottom:none;">
+            <div class="tot-code-toolbar" id="run-toolbar" style="border-top:1px solid var(--border);border-bottom:none;">
               <button class="tot-btn tot-btn--sm tot-btn--primary" id="run-btn" type="button">▶ Run Rule</button>
               <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">edits apply once you press Run Rule</span>
             </div>
@@ -189,6 +179,24 @@
           </div>
         </div>
 
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Overview</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Cellular Automata Grid</h2>
+        </div>
+        <p class="tot-module-header__lead" style="max-width:none;margin:14px 0 0;">
+          A grid of cells, each one a small state machine that only ever looks at its
+          eight neighbors. Pick how much information a cell can hold — a single
+          On/Off bit, one of several discrete states, or a full continuous RGB
+          color — then implement <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">nextState(state, neighbors) { ... }</code>
+          and watch the whole grid evolve from your rule alone. Conway's Game of
+          Life, WireWorld, a Cyclic Cellular Automaton, and a Gray-Scott
+          reaction-diffusion system are all one rule apiece — load any of them,
+          stamp in a glider or a Gosper glider gun, or write something nobody's
+          seen before.
+        </p>
       </div>
 
       <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
@@ -262,7 +270,9 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
+<script src="../assets/js/theme.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1092,6 +1102,11 @@ int[] nextState(int[] state, int[][] neighbors) {
   //  INIT
   // ─────────────────────────────────────────────────────────────
   loadPreset('life');
+  TotModuleStorage.attach({
+    key: 'cellular-automata',
+    textarea: document.getElementById('code-editor'),
+    toolbarId: 'run-toolbar',
+  });
 })();
 </script>
 </body>

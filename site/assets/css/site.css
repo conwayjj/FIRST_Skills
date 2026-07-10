@@ -203,6 +203,24 @@
 .tot-header__utility-right { display: flex; align-items: center; gap: 16px; }
 .tot-header__utility-email { color: var(--grey-300); }
 .tot-header__socials { display: flex; gap: 8px; }
+.tot-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--tot-white);
+  cursor: pointer;
+  transition: background var(--dur) var(--ease-standard);
+}
+.tot-theme-toggle:hover { background: rgba(255, 255, 255, 0.24); }
+.tot-theme-toggle__moon { display: none; }
+:root[data-theme="dark"] .tot-theme-toggle__sun { display: none; }
+:root[data-theme="dark"] .tot-theme-toggle__moon { display: inline-flex; }
 .tot-header__social {
   width: 30px; height: 30px;
   display: inline-flex; align-items: center; justify-content: center;

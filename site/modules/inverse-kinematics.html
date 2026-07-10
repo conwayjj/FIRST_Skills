@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{if(localStorage.getItem('tot-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}</script>
 <title>Inverse Kinematics — That ONE Team Training Hub</title>
 <meta name="description" content="Write a Java step(dt) solver to drive a prismatic + rotational arm to a target, with a real inertia-aware physics simulation.">
 <link rel="stylesheet" href="../assets/css/main.css">
@@ -52,14 +53,6 @@
           <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
         </div>
         <h1 class="tot-module-header__title">Inverse Kinematics</h1>
-        <p class="tot-module-header__lead">
-          A vertical linear actuator (prismatic joint) topped with a 1–3 link rotational
-          chain. Click the workspace to place a target, then write a Java
-          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
-          solver to drive the end effector there. The simulation is inertia-aware —
-          torque limits, damping, and moment-of-inertia all push back on your solver
-          the way a real mechanism would.
-        </p>
       </div>
 
       <div class="tot-workbench">
@@ -183,6 +176,21 @@
 
       <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
         <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Overview</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Inverse Kinematics</h2>
+        </div>
+        <p class="tot-module-header__lead" style="max-width:none;margin:14px 0 0;">
+          A vertical linear actuator (prismatic joint) topped with a 1–3 link rotational
+          chain. Click the workspace to place a target, then write a Java
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
+          solver to drive the end effector there. The simulation is inertia-aware —
+          torque limits, damping, and moment-of-inertia all push back on your solver
+          the way a real mechanism would.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
           <div class="tot-section-heading__eyebrow">Objective</div>
           <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Get the end effector on target</h2>
         </div>
@@ -243,7 +251,9 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
+<script src="../assets/js/theme.js"></script>
 <script>
 // ─────────────────────────────────────────────────────────────
 //  CONFIG
@@ -833,28 +843,21 @@ document.getElementById('density').addEventListener('input', e => {
 });
 
 // ─────────────────────────────────────────────────────────────
-//  UNDO / SAVE
+//  UNDO  (Save/Restore/Download/Load are wired by TotModuleStorage below)
 // ─────────────────────────────────────────────────────────────
-let undoStack = [], undoPtr = -1, ignoreNext = false, savedCode = null;
+let undoStack = [], undoPtr = -1, ignoreNext = false;
 function pushUndo(v) {
   undoStack = undoStack.slice(0, undoPtr + 1);
   if (undoStack.length && undoStack[undoStack.length - 1] === v) return;
   undoStack.push(v); if (undoStack.length > 200) undoStack.shift();
   undoPtr = undoStack.length - 1;
 }
-function applyUndo() { if (undoPtr > 0) { undoPtr--; ignoreNext = true; editor.value = undoStack[undoPtr]; updateSaveInd(); } }
-function applyRedo() { if (undoPtr < undoStack.length - 1) { undoPtr++; ignoreNext = true; editor.value = undoStack[undoPtr]; updateSaveInd(); } }
-function updateSaveInd() {
-  const el = document.getElementById('save-indicator');
-  if (!savedCode) { el.textContent = 'No save yet'; el.className = 'tot-save-indicator'; }
-  else if (editor.value === savedCode) { el.textContent = '✓ Saved'; el.className = 'tot-save-indicator tot-save-indicator--saved'; }
-  else { el.textContent = 'Unsaved changes'; el.className = 'tot-save-indicator'; }
-}
+function applyUndo() { if (undoPtr > 0) { undoPtr--; ignoreNext = true; editor.value = undoStack[undoPtr]; editor.dispatchEvent(new Event('input')); } }
+function applyRedo() { if (undoPtr < undoStack.length - 1) { undoPtr++; ignoreNext = true; editor.value = undoStack[undoPtr]; editor.dispatchEvent(new Event('input')); } }
 let iTimer = null;
 editor.addEventListener('input', () => {
   if (ignoreNext) { ignoreNext = false; return; }
   clearTimeout(iTimer); iTimer = setTimeout(() => pushUndo(editor.value), 300);
-  updateSaveInd();
 });
 editor.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); compileAndRun(); return; }
@@ -868,16 +871,6 @@ editor.addEventListener('keydown', e => {
     pushUndo(editor.value); return;
   }
   if (['Enter','Backspace','Delete'].includes(e.key)) pushUndo(editor.value);
-});
-document.getElementById('save-btn').addEventListener('click', () => {
-  savedCode = editor.value;
-  document.getElementById('restore-btn').disabled = false;
-  document.getElementById('save-indicator').textContent = '✓ Saved';
-  document.getElementById('save-indicator').className = 'tot-save-indicator tot-save-indicator--saved';
-  pushUndo(editor.value);
-});
-document.getElementById('restore-btn').addEventListener('click', () => {
-  if (savedCode) { pushUndo(editor.value); editor.value = savedCode; pushUndo(editor.value); updateSaveInd(); addOutput('// Restored from save.', 'info'); }
 });
 
 function addOutput(text, cls) {
@@ -983,7 +976,14 @@ void step(double dt) {
 
 editor.value = defaultCode;
 pushUndo(defaultCode);
-updateSaveInd();
+TotModuleStorage.attach({
+  key: 'inverse-kinematics',
+  textarea: editor,
+  indicatorId: 'save-indicator',
+  saveButtonId: 'save-btn',
+  restoreButtonId: 'restore-btn',
+  onRestore: () => addOutput('// Restored your saved code.', 'info'),
+});
 initPhysics();
 buildJointControls();
 buildVelBars();

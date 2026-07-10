@@ -48,8 +48,10 @@ site/
     img/                    logo-square.png, logo-wide.png
     js/
       nav.js                  Header dropdown / mobile menu behavior
+      theme.js                 Night/day mode toggle (injects the button, persists to localStorage)
       render-modules.js        Renders data/modules.js into the /index.html card grid
       module-runtime.js        Shared code-panel + simulation-canvas plumbing
+      module-storage.js        Shared save/restore/download/load for a module's code editor
 ```
 
 No bundler, no npm install — open the repo-root `index.html` in a browser, or serve
@@ -80,14 +82,21 @@ point into `site/...`.
    The template's own script (bottom of `modules/template.html`) is a complete,
    working example — a box that drifts around a canvas — copy its shape and swap
    the physics.
-5. **Update telemetry.** Change the three `.tot-telemetry__item` labels/values (or
+5. **Persist the student's code.** Call `TotModuleStorage.attach({ key: '<slug>',
+   textarea: <the code textarea element> })` (see `assets/js/module-storage.js`)
+   once the starter code is in the textarea. It autosaves to `localStorage` (so
+   work survives closing the tab) and adds Download/Load-file controls; pass
+   `saveButtonId`/`restoreButtonId` instead of letting it build its own row if
+   the module already has its own Save/Restore buttons (see
+   `modules/inverse-kinematics.html`).
+6. **Update telemetry.** Change the three `.tot-telemetry__item` labels/values (or
    add more columns) to whatever numbers matter for this lesson.
-6. **Register it in the catalog.** In `data/modules.js`, change that module's entry
+7. **Register it in the catalog.** In `data/modules.js`, change that module's entry
    from `status: 'coming-soon'` to `status: 'available'` and add
    `href: 'site/modules/<slug>.html'` (the hrefs are relative to the repo-root
    `index.html`, not to this folder). The hub page picks this up automatically — no
    other file needs to change.
-7. **Remove the template banner.** Delete the `.tot-callout` "this is a template
+8. **Remove the template banner.** Delete the `.tot-callout` "this is a template
    preview" box — that's only for the scaffold itself.
 
 `modules/inverse-kinematics.html` follows this exact pattern end to end — a

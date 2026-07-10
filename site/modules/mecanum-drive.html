@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{if(localStorage.getItem('tot-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}</script>
 <title>Mecanum Drive — That ONE Team Training Hub</title>
 <meta name="description" content="Write a Java void step(dt) method to turn joystick translation and rotation into four independent mecanum wheel speeds, and watch a slew-rate-limited chassis drive, strafe, and spin.">
 <link rel="stylesheet" href="../assets/css/main.css">
@@ -52,16 +53,6 @@
           <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
         </div>
         <h1 class="tot-module-header__title">Mecanum Drive</h1>
-        <p class="tot-module-header__lead">
-          Drag the joystick to command forward/strafe translation, drag the rotate slider to spin
-          in place, then write a Java
-          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
-          that turns those three numbers into four independent wheel speeds with
-          <code style="font-family:var(--font-mono);">setWheelSpeeds(fl, fr, bl, br)</code>. Each
-          wheel is slew-rate limited (it can't jump speed instantly), and the chassis's actual
-          motion is derived purely from your four wheel speeds — get the mixing formula wrong and
-          the robot won't go where the joystick says.
-        </p>
       </div>
 
       <div class="tot-workbench">
@@ -162,6 +153,23 @@
 
       <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
         <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Overview</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Mecanum Drive</h2>
+        </div>
+        <p class="tot-module-header__lead" style="max-width:none;margin:14px 0 0;">
+          Drag the joystick to command forward/strafe translation, drag the rotate slider to spin
+          in place, then write a Java
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
+          that turns those three numbers into four independent wheel speeds with
+          <code style="font-family:var(--font-mono);">setWheelSpeeds(fl, fr, bl, br)</code>. Each
+          wheel is slew-rate limited (it can't jump speed instantly), and the chassis's actual
+          motion is derived purely from your four wheel speeds — get the mixing formula wrong and
+          the robot won't go where the joystick says.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
           <div class="tot-section-heading__eyebrow">Objective</div>
           <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Mix translation and rotation into four wheels</h2>
         </div>
@@ -224,7 +232,9 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
+<script src="../assets/js/theme.js"></script>
 <script>
 (function () {
   "use strict";
@@ -610,6 +620,7 @@ void step(double dt) {
   //  INIT
   // ─────────────────────────────────────────────────────────────
   editor.value = examples.correct;
+  TotModuleStorage.attach({ key: 'mecanum-drive', textarea: editor });
   buildVelBars();
   drawJoystick();
   resetChassis();

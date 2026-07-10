@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{if(localStorage.getItem('tot-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}</script>
 <title>Module Template — That ONE Team Training Hub</title>
 <link rel="stylesheet" href="../assets/css/main.css">
 <link rel="stylesheet" href="../assets/css/module.css">
@@ -51,11 +52,6 @@
           <span class="tot-badge tot-badge--warning">Template Preview</span>
         </div>
         <h1 class="tot-module-header__title" data-module-title-heading>Module Template</h1>
-        <p class="tot-module-header__lead">
-          This is the scaffold every training module is built from: a short lesson, a
-          code panel, and a live simulation that reacts immediately. This particular
-          page hasn't been written yet — you're looking at the pattern, not the lesson.
-        </p>
       </div>
 
       <div class="tot-callout">
@@ -124,6 +120,18 @@ public class Robot {
         </div>
       </div>
 
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Overview</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Module Template</h2>
+        </div>
+        <p class="tot-module-header__lead" style="max-width:none;margin:14px 0 0;">
+          This is the scaffold every training module is built from: a short lesson, a
+          code panel, and a live simulation that reacts immediately. This particular
+          page hasn't been written yet — you're looking at the pattern, not the lesson.
+        </p>
+      </div>
+
       <div class="tot-card tot-card--pad-lg">
         <div class="tot-section-heading">
           <div class="tot-section-heading__eyebrow">Objective</div>
@@ -163,6 +171,8 @@ public class Robot {
 </footer>
 
 <script src="../assets/js/nav.js"></script>
+<script src="../assets/js/theme.js"></script>
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/module-runtime.js"></script>
 <script>
   (function () {
@@ -231,6 +241,11 @@ public class Robot {
         state.vy += (Math.random() - 0.5) * 80;
       },
       onReset: function (state) {},
+    });
+
+    TotModuleStorage.attach({
+      key: 'template',
+      textarea: document.getElementById('code-input'),
     });
   })();
 </script>

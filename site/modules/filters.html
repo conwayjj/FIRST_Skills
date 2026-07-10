@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{if(localStorage.getItem('tot-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}</script>
 <title>Filters — That ONE Team Training Hub</title>
 <meta name="description" content="Write a Java double filter(double x) method to smooth, differentiate, or clean up noisy sensor signals in real time, then run it against six different input signal generators.">
 <link rel="stylesheet" href="../assets/css/main.css">
@@ -52,16 +53,6 @@
           <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
         </div>
         <h1 class="tot-module-header__title">Filters</h1>
-        <p class="tot-module-header__lead">
-          Feed a noisy, glitchy, or hand-drawn signal into a small Java method and watch
-          the effect immediately. Implement
-          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">double filter(double x) { ... return y; }</code>
-          — called once per incoming sample, exactly like a real embedded control loop
-          would call it — and any state you declare above it (a running average, a
-          previous sample, a threshold) persists between calls. Six signal generators
-          are provided, including a Draw It mode so you can sketch pathological inputs
-          by hand.
-        </p>
       </div>
 
       <div class="tot-workbench">
@@ -162,6 +153,23 @@
 
       <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
         <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Overview</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Filters</h2>
+        </div>
+        <p class="tot-module-header__lead" style="max-width:none;margin:14px 0 0;">
+          Feed a noisy, glitchy, or hand-drawn signal into a small Java method and watch
+          the effect immediately. Implement
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">double filter(double x) { ... return y; }</code>
+          — called once per incoming sample, exactly like a real embedded control loop
+          would call it — and any state you declare above it (a running average, a
+          previous sample, a threshold) persists between calls. Six signal generators
+          are provided, including a Draw It mode so you can sketch pathological inputs
+          by hand.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
           <div class="tot-section-heading__eyebrow">Objective</div>
           <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Shape the output trace</h2>
         </div>
@@ -216,7 +224,9 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
+<script src="../assets/js/theme.js"></script>
 <script>
 (function () {
   "use strict";
@@ -722,6 +732,7 @@ double filter(double x) {
   //  INIT
   // ─────────────────────────────────────────────────────────────
   document.getElementById('code-editor').value = examples.movavg;
+  TotModuleStorage.attach({ key: 'filters', textarea: document.getElementById('code-editor') });
   resizeChartCanvas();
   resizeDrawCanvas();
   renderParams();
