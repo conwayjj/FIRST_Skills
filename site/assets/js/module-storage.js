@@ -5,13 +5,14 @@
 //   - autosaves the textarea to localStorage (namespaced per module) and
 //     silently restores it the next time the page loads, so work isn't
 //     lost between sessions without the student having to do anything
-//   - adds a "Download" button that saves the current code to a real
-//     .java file on disk, and a "Load file" button that reads one back in
-//     (useful for backups, or moving work between machines)
+//   - builds a small Save / Restore / Download / Load file row (every
+//     module gets the identical row, so the UI is consistent site-wide)
 //
-// Usage: call TotModuleStorage.attach({...}) once the module's default
-// starter code has already been placed in the textarea. See
-// /site/README.md for the full option list and a worked example.
+// Usage: call TotModuleStorage.attach({ key, textarea }) once the module's
+// default starter code has already been placed in the textarea. Pass
+// toolbarId to append the row into an existing toolbar element instead of
+// inserting a new row right after the textarea. See /site/README.md for
+// the full option list and a worked example.
 (function () {
   var PREFIX = 'tot-code:';
 
@@ -48,26 +49,12 @@
     return btn;
   }
 
-  function makeFileInput(onFile) {
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.java,.txt,text/plain';
-    input.style.display = 'none';
-    input.addEventListener('change', function () {
-      if (input.files[0]) onFile(input.files[0]);
-      input.value = '';
-    });
-    return input;
-  }
-
   function attach(opts) {
     var key = opts.key;
     var textarea = opts.textarea;
     var fileName = key + '.java';
-    var indicator = opts.indicatorId ? document.getElementById(opts.indicatorId) : null;
 
     function setIndicator(text, saved) {
-      if (!indicator) return;
       indicator.textContent = text;
       indicator.className = 'tot-save-indicator' + (saved ? ' tot-save-indicator--saved' : '');
     }
@@ -75,7 +62,7 @@
     function save() {
       var ok = writeLocal(key, textarea.value);
       setIndicator(ok ? '✓ Saved' : 'Could not save (storage unavailable)', ok);
-      if (restoreBtn) restoreBtn.disabled = !ok;
+      restoreBtn.disabled = !ok;
       return ok;
     }
 
@@ -103,54 +90,38 @@
       });
     }
 
-    var saveBtn = opts.saveButtonId ? document.getElementById(opts.saveButtonId) : null;
-    var restoreBtn = opts.restoreButtonId ? document.getElementById(opts.restoreButtonId) : null;
+    var saveBtn = makeButton('Save');
+    var restoreBtn = makeButton('Restore');
+    var downloadBtn = makeButton('Download .java');
+    var loadBtn = makeButton('Load file');
+    var indicator = document.createElement('span');
+    indicator.className = 'tot-save-indicator';
 
-    if (saveBtn) {
-      // Reuse an existing Save/Restore UI — just add Download / Load file next to it.
-      var dlBtn = makeButton('Download .java');
-      dlBtn.addEventListener('click', download);
-      saveBtn.insertAdjacentElement('afterend', dlBtn);
-
-      var loadBtn = makeButton('Load file');
-      var fileInput = makeFileInput(loadFromFile);
-      loadBtn.addEventListener('click', function () { fileInput.click(); });
-      dlBtn.insertAdjacentElement('afterend', loadBtn);
-      loadBtn.insertAdjacentElement('afterend', fileInput);
-    } else {
-      saveBtn = makeButton('Save');
-      restoreBtn = makeButton('Restore');
-      var dlBtn2 = makeButton('Download .java');
-      dlBtn2.addEventListener('click', download);
-      var loadBtn2 = makeButton('Load file');
-      var fileInput2 = makeFileInput(loadFromFile);
-      loadBtn2.addEventListener('click', function () { fileInput2.click(); });
-
-      if (!indicator) {
-        indicator = document.createElement('span');
-        indicator.className = 'tot-save-indicator';
-        indicator.id = key + '-save-indicator';
-      }
-
-      var mount = opts.toolbarId ? document.getElementById(opts.toolbarId) : null;
-      if (mount) {
-        [saveBtn, restoreBtn, dlBtn2, loadBtn2, fileInput2, indicator].forEach(function (el) {
-          mount.appendChild(el);
-        });
-      } else {
-        var row = document.createElement('div');
-        row.className = 'tot-code-toolbar';
-        row.style.borderTop = '1px solid var(--border)';
-        row.style.borderBottom = 'none';
-        [saveBtn, restoreBtn, dlBtn2, loadBtn2, fileInput2, indicator].forEach(function (el) {
-          row.appendChild(el);
-        });
-        textarea.insertAdjacentElement('afterend', row);
-      }
-    }
+    var fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.java,.txt,text/plain';
+    fileInput.style.display = 'none';
+    fileInput.addEventListener('change', function () {
+      if (fileInput.files[0]) loadFromFile(fileInput.files[0]);
+      fileInput.value = '';
+    });
 
     saveBtn.addEventListener('click', save);
     restoreBtn.addEventListener('click', function () { restore(false); });
+    downloadBtn.addEventListener('click', download);
+    loadBtn.addEventListener('click', function () { fileInput.click(); });
+
+    var mount = opts.toolbarId ? document.getElementById(opts.toolbarId) : null;
+    if (!mount) {
+      mount = document.createElement('div');
+      mount.className = 'tot-code-toolbar';
+      mount.style.borderTop = '1px solid var(--border)';
+      mount.style.borderBottom = 'none';
+      textarea.insertAdjacentElement('afterend', mount);
+    }
+    [saveBtn, restoreBtn, downloadBtn, loadBtn, fileInput, indicator].forEach(function (el) {
+      mount.appendChild(el);
+    });
 
     var hasSave = readLocal(key) !== null;
     restoreBtn.disabled = !hasSave;
