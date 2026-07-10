@@ -172,6 +172,7 @@ public class Robot {
 
 <script src="../assets/js/nav.js"></script>
 <script src="../assets/js/theme.js"></script>
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/module-runtime.js"></script>
 <script>
   (function () {
@@ -240,6 +241,11 @@ public class Robot {
         state.vy += (Math.random() - 0.5) * 80;
       },
       onReset: function (state) {},
+    });
+
+    TotModuleStorage.attach({
+      key: 'template',
+      textarea: document.getElementById('code-input'),
     });
   })();
 </script>

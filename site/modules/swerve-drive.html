@@ -235,6 +235,7 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script>
@@ -659,6 +660,7 @@ void step(double dt) {
   //  INIT
   // ─────────────────────────────────────────────────────────────
   editor.value = examples.direct;
+  TotModuleStorage.attach({ key: 'swerve-drive', textarea: editor });
   drawJoystick();
   resetChassis();
   draw();

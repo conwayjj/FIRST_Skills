@@ -229,6 +229,7 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script>
@@ -603,6 +604,7 @@ double calculate(double current, double target) {
   //  INIT
   // ─────────────────────────────────────────────────────────────
   editor.value = examples.pid;
+  TotModuleStorage.attach({ key: 'pidf-control', textarea: editor });
   resetMechanism();
   resizeChartCanvas();
   updateMetrics();

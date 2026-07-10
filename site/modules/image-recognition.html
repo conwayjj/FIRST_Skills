@@ -220,6 +220,7 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script>
@@ -633,6 +634,7 @@ void scan() {
   //  INIT
   // ─────────────────────────────────────────────────────────────
   editor.value = examples.blob;
+  TotModuleStorage.attach({ key: 'image-recognition', textarea: editor });
   buildScene();
   draw();
 })();

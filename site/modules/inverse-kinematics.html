@@ -251,6 +251,7 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script>
@@ -842,28 +843,21 @@ document.getElementById('density').addEventListener('input', e => {
 });
 
 // ─────────────────────────────────────────────────────────────
-//  UNDO / SAVE
+//  UNDO  (Save/Restore/Download/Load are wired by TotModuleStorage below)
 // ─────────────────────────────────────────────────────────────
-let undoStack = [], undoPtr = -1, ignoreNext = false, savedCode = null;
+let undoStack = [], undoPtr = -1, ignoreNext = false;
 function pushUndo(v) {
   undoStack = undoStack.slice(0, undoPtr + 1);
   if (undoStack.length && undoStack[undoStack.length - 1] === v) return;
   undoStack.push(v); if (undoStack.length > 200) undoStack.shift();
   undoPtr = undoStack.length - 1;
 }
-function applyUndo() { if (undoPtr > 0) { undoPtr--; ignoreNext = true; editor.value = undoStack[undoPtr]; updateSaveInd(); } }
-function applyRedo() { if (undoPtr < undoStack.length - 1) { undoPtr++; ignoreNext = true; editor.value = undoStack[undoPtr]; updateSaveInd(); } }
-function updateSaveInd() {
-  const el = document.getElementById('save-indicator');
-  if (!savedCode) { el.textContent = 'No save yet'; el.className = 'tot-save-indicator'; }
-  else if (editor.value === savedCode) { el.textContent = '✓ Saved'; el.className = 'tot-save-indicator tot-save-indicator--saved'; }
-  else { el.textContent = 'Unsaved changes'; el.className = 'tot-save-indicator'; }
-}
+function applyUndo() { if (undoPtr > 0) { undoPtr--; ignoreNext = true; editor.value = undoStack[undoPtr]; editor.dispatchEvent(new Event('input')); } }
+function applyRedo() { if (undoPtr < undoStack.length - 1) { undoPtr++; ignoreNext = true; editor.value = undoStack[undoPtr]; editor.dispatchEvent(new Event('input')); } }
 let iTimer = null;
 editor.addEventListener('input', () => {
   if (ignoreNext) { ignoreNext = false; return; }
   clearTimeout(iTimer); iTimer = setTimeout(() => pushUndo(editor.value), 300);
-  updateSaveInd();
 });
 editor.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); compileAndRun(); return; }
@@ -877,16 +871,6 @@ editor.addEventListener('keydown', e => {
     pushUndo(editor.value); return;
   }
   if (['Enter','Backspace','Delete'].includes(e.key)) pushUndo(editor.value);
-});
-document.getElementById('save-btn').addEventListener('click', () => {
-  savedCode = editor.value;
-  document.getElementById('restore-btn').disabled = false;
-  document.getElementById('save-indicator').textContent = '✓ Saved';
-  document.getElementById('save-indicator').className = 'tot-save-indicator tot-save-indicator--saved';
-  pushUndo(editor.value);
-});
-document.getElementById('restore-btn').addEventListener('click', () => {
-  if (savedCode) { pushUndo(editor.value); editor.value = savedCode; pushUndo(editor.value); updateSaveInd(); addOutput('// Restored from save.', 'info'); }
 });
 
 function addOutput(text, cls) {
@@ -992,7 +976,14 @@ void step(double dt) {
 
 editor.value = defaultCode;
 pushUndo(defaultCode);
-updateSaveInd();
+TotModuleStorage.attach({
+  key: 'inverse-kinematics',
+  textarea: editor,
+  indicatorId: 'save-indicator',
+  saveButtonId: 'save-btn',
+  restoreButtonId: 'restore-btn',
+  onRestore: () => addOutput('// Restored your saved code.', 'info'),
+});
 initPhysics();
 buildJointControls();
 buildVelBars();

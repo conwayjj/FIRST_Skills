@@ -232,6 +232,7 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script>
@@ -619,6 +620,7 @@ void step(double dt) {
   //  INIT
   // ─────────────────────────────────────────────────────────────
   editor.value = examples.correct;
+  TotModuleStorage.attach({ key: 'mecanum-drive', textarea: editor });
   buildVelBars();
   drawJoystick();
   resetChassis();

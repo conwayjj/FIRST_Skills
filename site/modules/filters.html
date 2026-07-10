@@ -224,6 +224,7 @@
   </div>
 </footer>
 
+<script src="../assets/js/module-storage.js"></script>
 <script src="../assets/js/nav.js"></script>
 <script src="../assets/js/theme.js"></script>
 <script>
@@ -731,6 +732,7 @@ double filter(double x) {
   //  INIT
   // ─────────────────────────────────────────────────────────────
   document.getElementById('code-editor').value = examples.movavg;
+  TotModuleStorage.attach({ key: 'filters', textarea: document.getElementById('code-editor') });
   resizeChartCanvas();
   resizeDrawCanvas();
   renderParams();
