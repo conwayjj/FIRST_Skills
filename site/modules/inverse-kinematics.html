@@ -154,9 +154,7 @@
           <div class="tot-code-toolbar">
             <button class="tot-btn tot-btn--sm tot-btn--primary" id="run-btn">Start ▸</button>
             <button class="tot-btn tot-btn--sm tot-btn--secondary" id="stop-btn">Stop ◾◾</button>
-            <button class="tot-btn tot-btn--sm tot-btn--ghost" id="save-btn">Save</button>
-            <button class="tot-btn tot-btn--sm tot-btn--ghost" id="restore-btn" disabled>Restore</button>
-            <span class="tot-save-indicator" id="save-indicator">Ctrl+Enter to start</span>
+            <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">Ctrl+Enter to start</span>
           </div>
           <div class="tot-panel__body">
             <textarea class="tot-code-editor" id="code-editor" spellcheck="false"></textarea>
@@ -979,9 +977,6 @@ pushUndo(defaultCode);
 TotModuleStorage.attach({
   key: 'inverse-kinematics',
   textarea: editor,
-  indicatorId: 'save-indicator',
-  saveButtonId: 'save-btn',
-  restoreButtonId: 'restore-btn',
   onRestore: () => addOutput('// Restored your saved code.', 'info'),
 });
 initPhysics();

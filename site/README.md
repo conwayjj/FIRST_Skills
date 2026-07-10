@@ -85,10 +85,11 @@ point into `site/...`.
 5. **Persist the student's code.** Call `TotModuleStorage.attach({ key: '<slug>',
    textarea: <the code textarea element> })` (see `assets/js/module-storage.js`)
    once the starter code is in the textarea. It autosaves to `localStorage` (so
-   work survives closing the tab) and adds Download/Load-file controls; pass
-   `saveButtonId`/`restoreButtonId` instead of letting it build its own row if
-   the module already has its own Save/Restore buttons (see
-   `modules/inverse-kinematics.html`).
+   work survives closing the tab) and builds a Save / Restore / Download .java /
+   Load file row right after the textarea — every module gets the same row, so
+   don't hand-build your own Save/Restore buttons. Pass `toolbarId: '<id>'` if
+   you'd rather the row append into an existing toolbar element instead of
+   inserting a new one (see `modules/cellular-automata.html`'s Run-button row).
 6. **Update telemetry.** Change the three `.tot-telemetry__item` labels/values (or
    add more columns) to whatever numbers matter for this lesson.
 7. **Register it in the catalog.** In `data/modules.js`, change that module's entry
