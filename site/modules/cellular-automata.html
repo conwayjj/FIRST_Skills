@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cellular Automata Grid — That ONE Team Training Hub</title>
+<meta name="description" content="Write a Java-flavored int nextState(int state, int[] neighbors) rule and watch a whole grid of cells evolve — Conway's Game of Life, WireWorld, Brian's Brain, and your own multi-color rules.">
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/module.css">
+<style>
+  .ca-palette { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 14px 0; }
+  .ca-swatch {
+    width: 30px; height: 30px; border-radius: var(--radius-sm);
+    border: 2px solid var(--border-strong); cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 10px; color: rgba(0,0,0,0.35);
+  }
+  .ca-swatch.is-active { border-color: var(--tot-blue); box-shadow: 0 0 0 3px var(--blue-100); }
+  .ca-canvas-wrap { cursor: crosshair; }
+  #ca-canvas { image-rendering: pixelated; }
+  .ca-pattern-row { display: flex; gap: 8px; align-items: center; }
+  .ca-pattern-row select.tot-select { flex: 1; }
+</style>
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+      </div>
+    </div>
+  </div>
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="../../index.html">
+        <img class="tot-header__logo-img" src="../assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../README.md">Build Guide</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tot-section tot-section--tight tot-section--surface">
+    <div class="tot-container">
+
+      <div class="tot-breadcrumb">
+        <a href="../../index.html">Home</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <a href="../../index.html#modules">Modules</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <span class="tot-breadcrumb__current">Cellular Automata Grid</span>
+      </div>
+
+      <div class="tot-module-header">
+        <div class="tot-module-header__badges">
+          <span class="tot-badge tot-badge--soft">Fun / Logic</span>
+          <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
+        </div>
+        <h1 class="tot-module-header__title">Cellular Automata Grid</h1>
+        <p class="tot-module-header__lead">
+          A grid of cells, each one a small state machine that only ever looks at its
+          eight neighbors. Implement
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">int nextState(int state, int[] neighbors) { ... }</code>
+          — called once per cell, every generation — and the whole grid evolves from
+          your rule alone. Conway's Game of Life is one rule out of many: load
+          WireWorld, Brian's Brain, or a two-color "Immigration" variant of Life from
+          the presets, stamp in a glider or a Gosper glider gun, or write a rule
+          nobody's seen before.
+        </p>
+      </div>
+
+      <div class="tot-workbench">
+
+        <!-- GRID PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Grid</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--soft" id="rule-pill">Conway's Life</span>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+
+            <div class="ca-canvas-wrap tot-sim-canvas-wrap">
+              <canvas id="ca-canvas" width="720" height="456" aria-label="Cellular automata grid"></canvas>
+            </div>
+
+            <div class="ca-palette" id="ca-palette"></div>
+            <p class="tot-hint-text">Click or drag on the grid to paint cells with the selected color above.</p>
+
+            <div class="tot-metrics-row">
+              <div class="tot-metric-card"><div class="tot-metric-label">Gen</div><div class="tot-metric-value" id="m-gen">0</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Live Cells</div><div class="tot-metric-value" id="m-pop">0</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Grid</div><div class="tot-metric-value" id="m-size">60×38</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Speed</div><div class="tot-metric-value" id="m-speed">8/s</div></div>
+            </div>
+
+            <div class="tot-control-group">
+              <div class="tot-control-heading">Playback</div>
+              <div style="display:flex;gap:8px;">
+                <button class="tot-btn tot-btn--sm tot-btn--primary" id="play-btn" type="button" style="flex:1;">▶ Play</button>
+                <button class="tot-btn tot-btn--sm tot-btn--secondary" id="step-btn" type="button" style="flex:1;">Step ▸</button>
+              </div>
+              <div class="tot-control-row" style="margin-top:12px;">
+                <span class="tot-control-label">Speed</span>
+                <input type="range" class="tot-range" id="speed-slider" min="1" max="30" step="1" value="8">
+                <span class="tot-control-value" id="speed-val">8/s</span>
+              </div>
+              <div class="tot-checkbox-row" style="margin-top:10px;">
+                <input type="checkbox" id="wrap-check" checked>
+                <label for="wrap-check">wrap edges (toroidal grid)</label>
+              </div>
+
+              <div class="tot-control-heading">Board</div>
+              <div style="display:flex;gap:8px;">
+                <button class="tot-btn tot-btn--sm tot-btn--secondary" id="random-btn" type="button" style="flex:1;">Randomize</button>
+                <button class="tot-btn tot-btn--sm tot-btn--ghost" id="clear-btn" type="button" style="flex:1;border:2px solid var(--border-strong);">Clear</button>
+              </div>
+
+              <div class="tot-control-heading">Famous Patterns</div>
+              <div class="ca-pattern-row">
+                <select class="tot-select" id="pattern-select"></select>
+                <button class="tot-btn tot-btn--sm tot-btn--secondary" id="stamp-btn" type="button">Stamp</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- CODE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Rule.java</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--outline tot-badge--outline-on-dark">nextState(state, neighbors)</span>
+            </div>
+          </div>
+          <div class="tot-code-toolbar">
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="life" type="button">Conway's Life</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="highlife" type="button">HighLife</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="seeds" type="button">Seeds</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="daynight" type="button">Day &amp; Night</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="brian" type="button">Brian's Brain</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="wireworld" type="button">WireWorld</button>
+            <button class="tot-btn tot-btn--sm tot-btn--secondary" data-preset="immigration" type="button">Immigration</button>
+          </div>
+          <div class="tot-panel__body">
+            <textarea class="tot-code-editor" id="code-editor" spellcheck="false"></textarea>
+            <div class="tot-code-toolbar" style="border-top:1px solid var(--border);border-bottom:none;">
+              <button class="tot-btn tot-btn--sm tot-btn--primary" id="run-btn" type="button">▶ Run Rule</button>
+              <span style="margin-left:auto;font-size:12px;color:var(--text-muted);">edits apply once you press Run Rule</span>
+            </div>
+            <div class="tot-console" id="console-output">
+              <div class="tot-console__line--info">// nextState(state, neighbors) is called once per cell, every generation.</div>
+              <div class="tot-console__line--info">// neighbors is the 8 Moore-neighborhood states: N,NE,E,SE,S,SW,W,NW.</div>
+              <div class="tot-console__line--info">// count(neighbors, s) counts how many of those 8 are in state s.</div>
+              <div class="tot-console__line--info">// Pick a preset above, or write your own, then press Run Rule.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Objective</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">One local rule, one global pattern</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 0;">
+          Every cell only ever knows its own state and its eight neighbors' states —
+          there's no global logic anywhere. Start with Conway's Life and stamp in a
+          Glider or the Gosper Glider Gun to see motion emerge from nothing but
+          birth/survival counts. Then switch to WireWorld (a 4-state rule used to build
+          real logic circuits out of cells) or Brian's Brain (an oscillating 3-state
+          rule with no stable still lifes at all), and notice that both run through the
+          exact same grid and playback controls — only <code>nextState()</code>
+          changed. Finish by writing your own multi-color rule: the Immigration preset
+          is a two-color version of Life where a newborn cell inherits the majority
+          color of the three parents that created it.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Reference</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">nextState(state, neighbors) API</h2>
+        </div>
+        <dl class="tot-reference-grid">
+          <dt>state</dt><dd>The current cell's state, an integer from 0 (background) up to however many colors the active rule uses.</dd>
+          <dt>neighbors</dt><dd>An 8-element array of the Moore neighborhood's states, in order N, NE, E, SE, S, SW, W, NW.</dd>
+          <dt>count(neighbors, s)</dt><dd>Helper available inside your rule — returns how many of the 8 neighbors are in state s.</dd>
+          <dt>return value</dt><dd>The state this cell becomes next generation. Every cell in the grid is evaluated against the same old generation, so order never matters.</dd>
+          <dt>Run Rule</dt><dd>Recompiles nextState(...) and (if checked) applies it going forward as the grid steps.</dd>
+          <dt>wrap edges</dt><dd>When on, the grid is toroidal — the right edge's neighbor is the left edge, and the bottom's is the top.</dd>
+          <dt>palette</dt><dd>Swatches match the active rule's state count. Pick one, then click/drag on the grid to paint cells with that state.</dd>
+          <dt>Famous Patterns</dt><dd>Stamps a known still life, oscillator, spaceship, or gun onto the center of the grid (clears the board first).</dd>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="../assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="../../index.html">Home</a>
+      <a class="tot-footer__link" href="../../index.html#modules">Modules</a>
+      <a class="tot-footer__link" href="../README.md">Build Guide</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="../assets/js/nav.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ─────────────────────────────────────────────────────────────
+  //  GRID
+  // ─────────────────────────────────────────────────────────────
+  const COLS = 60, ROWS = 38, CELL = 12;
+  let grid = new Uint8Array(COLS * ROWS);
+  let nextGrid = new Uint8Array(COLS * ROWS);
+  let generation = 0;
+  let wrapEdges = true;
+  let speed = 8;
+  let playing = false;
+  let timer = null;
+  let currentBrush = 1;
+  let ruleFn = null;
+
+  const canvas = document.getElementById('ca-canvas');
+  const ctx = canvas.getContext('2d');
+
+  const DIRS = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]]; // N,NE,E,SE,S,SW,W,NW
+
+  function computeNeighbors(x, y) {
+    const arr = new Array(8);
+    for (let i = 0; i < 8; i++) {
+      let nx = x + DIRS[i][0], ny = y + DIRS[i][1];
+      if (wrapEdges) {
+        nx = (nx + COLS) % COLS;
+        ny = (ny + ROWS) % ROWS;
+      }
+      arr[i] = (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) ? grid[ny * COLS + nx] : 0;
+    }
+    return arr;
+  }
+
+  function stepGeneration() {
+    if (!ruleFn) return;
+    const maxState = currentPreset.colors.length - 1;
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const idx = y * COLS + x;
+        let ns;
+        try {
+          ns = ruleFn(grid[idx], computeNeighbors(x, y));
+        } catch (err) {
+          stopPlaying();
+          addOutput('✗ error: ' + err.message, 'error');
+          return;
+        }
+        ns = (typeof ns === 'number' && isFinite(ns)) ? (ns | 0) : 0;
+        nextGrid[idx] = Math.max(0, Math.min(maxState, ns));
+      }
+    }
+    const tmp = grid; grid = nextGrid; nextGrid = tmp;
+    generation++;
+    updateMetrics();
+  }
+
+  function draw() {
+    const colors = currentPreset.colors;
+    ctx.fillStyle = colors[0];
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        const s = grid[y * COLS + x];
+        if (s === 0) continue;
+        ctx.fillStyle = colors[s] || colors[colors.length - 1];
+        ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+      }
+    }
+  }
+
+  function updateMetrics() {
+    document.getElementById('m-gen').textContent = generation;
+    let pop = 0;
+    for (let i = 0; i < grid.length; i++) if (grid[i] !== 0) pop++;
+    document.getElementById('m-pop').textContent = pop;
+    document.getElementById('m-size').textContent = COLS + '×' + ROWS;
+    document.getElementById('m-speed').textContent = speed + '/s';
+    document.getElementById('speed-val').textContent = speed + '/s';
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  JAVA -> JS TRANSPILER (constrained subset used by nextState())
+  //  Mirrors the approach used by the Filters module's transpileAndBuild —
+  //  see /site/README.md, "Executing student code."
+  // ─────────────────────────────────────────────────────────────
+  function transpileBody(body) {
+    let b = body;
+    b = b.replace(/for\s*\(\s*(double|int|float|long)\s+(\w+)\s*:\s*(\w+)\s*\)/g, 'for (const $2 of $3)');
+    b = b.replace(/new\s+(double|int|float|long)\s*\[([^\]]+)\]/g, 'new Array($2).fill(0)');
+    b = b.replace(/\b(double|int|float|long)\s*\[\s*\]\s*(\w+)\s*=/g, 'let $2 =');
+    b = b.replace(/\b(double|int|float|long)\s*\[\s*\]\s*(\w+)\s*;/g, 'let $2;');
+    b = b.replace(/\b(double|int|float|long|boolean)\s+(\w+)\s*=/g, 'let $2 =');
+    b = b.replace(/\b(double|int|float|long|boolean)\s+(\w+)\s*;/g, 'let $2;');
+    b = b.replace(/\(\s*int\s*\)\s*/g, '');
+    b = b.replace(/\(\s*double\s*\)\s*/g, '');
+    return b;
+  }
+
+  // Builds a nextState(state, neighbors) closure from student code shaped like:
+  //   int nextState(int state, int[] neighbors) { ... return ...; }
+  // with a `count(neighbors, s)` helper available inside it.
+  function transpileAndBuild(javaCode) {
+    const sigRegex = /int\s+nextState\s*\(\s*int\s+(\w+)\s*,\s*int\s*\[\s*\]\s*(\w+)\s*\)\s*\{/;
+    const sigMatch = javaCode.match(sigRegex);
+    if (!sigMatch) throw new Error("Couldn't find a method matching:  int nextState(int state, int[] neighbors) { ... }");
+    const stateParam = sigMatch[1], neighborsParam = sigMatch[2];
+    const startIdx = sigMatch.index + sigMatch[0].length;
+    let depth = 1, i = startIdx;
+    for (; i < javaCode.length; i++) {
+      if (javaCode[i] === '{') depth++;
+      else if (javaCode[i] === '}') { depth--; if (depth === 0) break; }
+    }
+    if (depth !== 0) throw new Error("Mismatched braces — check that every { has a matching }.");
+    const preamble = javaCode.slice(0, sigMatch.index);
+    const rawBody = javaCode.slice(startIdx, i);
+    const jsPreamble = transpileBody(preamble);
+    const jsBody = transpileBody(rawBody);
+    const factory = new Function(
+      '"use strict";\n' +
+      'function count(neighbors, s) { var c = 0; for (var i = 0; i < neighbors.length; i++) { if (neighbors[i] === s) c++; } return c; }\n' +
+      jsPreamble +
+      '\nreturn function(' + stateParam + ', ' + neighborsParam + ') {\n' + jsBody + '\n};'
+    );
+    return factory();
+  }
+
+  function runRule() {
+    const code = document.getElementById('code-editor').value;
+    try {
+      const fn = transpileAndBuild(code);
+      if (typeof fn !== 'function') throw new Error("Couldn't find a method matching:  int nextState(int state, int[] neighbors) { ... }");
+      ruleFn = fn;
+      clearOutput();
+      addOutput('✓ compiled — nextState() is now driving the grid.', 'ok');
+    } catch (err) {
+      clearOutput();
+      addOutput('✗ error: ' + err.message, 'error');
+    }
+  }
+
+  function addOutput(text, cls) {
+    const consoleEl = document.getElementById('console-output');
+    const d = document.createElement('div');
+    d.className = cls ? 'tot-console__line--' + cls : '';
+    d.textContent = text;
+    consoleEl.appendChild(d);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+  function clearOutput() { document.getElementById('console-output').innerHTML = ''; }
+
+  // ─────────────────────────────────────────────────────────────
+  //  FAMOUS PATTERNS (relative cell coordinates, [dx, dy, state])
+  // ─────────────────────────────────────────────────────────────
+  function lifeCells(coords) { return coords.map(function (c) { return [c[0], c[1], 1]; }); }
+
+  const pulsarRows = { 0: [2, 3, 4, 8, 9, 10], 2: [0, 5, 7, 12], 3: [0, 5, 7, 12], 4: [0, 5, 7, 12], 5: [2, 3, 4, 8, 9, 10], 7: [2, 3, 4, 8, 9, 10], 8: [0, 5, 7, 12], 9: [0, 5, 7, 12], 10: [0, 5, 7, 12], 12: [2, 3, 4, 8, 9, 10] };
+  const pulsarCells = [];
+  Object.keys(pulsarRows).forEach(function (y) { pulsarRows[y].forEach(function (x) { pulsarCells.push([x, +y]); }); });
+
+  const gunRows = { 0: [24], 1: [22, 24], 2: [12, 13, 20, 21, 34, 35], 3: [11, 15, 20, 21, 34, 35], 4: [0, 1, 10, 16, 20, 21], 5: [0, 1, 10, 14, 16, 17, 22, 24], 6: [10, 16, 24], 7: [11, 15], 8: [12, 13] };
+  const gunCells = [];
+  Object.keys(gunRows).forEach(function (y) { gunRows[y].forEach(function (x) { gunCells.push([x, +y]); }); });
+
+  const LIFE_PATTERNS = {
+    'Glider': { w: 3, h: 3, cells: lifeCells([[1, 0], [2, 1], [0, 2], [1, 2], [2, 2]]) },
+    'Blinker': { w: 3, h: 1, cells: lifeCells([[0, 0], [1, 0], [2, 0]]) },
+    'Toad': { w: 4, h: 2, cells: lifeCells([[1, 0], [2, 0], [3, 0], [0, 1], [1, 1], [2, 1]]) },
+    'Beacon': { w: 4, h: 4, cells: lifeCells([[0, 0], [1, 0], [0, 1], [1, 1], [2, 2], [3, 2], [2, 3], [3, 3]]) },
+    'Lightweight Spaceship': { w: 5, h: 4, cells: lifeCells([[1, 0], [4, 0], [4, 1], [0, 2], [4, 2], [0, 3], [1, 3], [2, 3]]) },
+    'Pulsar': { w: 13, h: 13, cells: lifeCells(pulsarCells) },
+    'Gosper Glider Gun': { w: 36, h: 9, cells: lifeCells(gunCells) },
+  };
+
+  const wireLoopWire = [];
+  for (let x = 2; x <= 9; x++) wireLoopWire.push([x, 0]);
+  for (let y = 1; y <= 4; y++) { wireLoopWire.push([0, y]); wireLoopWire.push([9, y]); }
+  for (let x = 0; x <= 9; x++) wireLoopWire.push([x, 5]);
+  const WIREWORLD_PATTERNS = {
+    'Clock Loop (basic oscillator)': {
+      w: 10, h: 6,
+      cells: wireLoopWire.map(function (c) { return [c[0], c[1], 1]; }).concat([[0, 0, 2], [1, 0, 3]]),
+    },
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  //  RULE PRESETS
+  // ─────────────────────────────────────────────────────────────
+  const PRESETS = {
+    life: {
+      label: "Conway's Life",
+      states: 2,
+      colors: ['#f6f7f7', '#0095C8'],
+      patterns: LIFE_PATTERNS,
+      code:
+`// Conway's Game of Life — B3/S23
+// state 0 = dead, state 1 = alive
+
+int nextState(int state, int[] neighbors) {
+    int alive = count(neighbors, 1);
+    if (state == 1) {
+        return (alive == 2 || alive == 3) ? 1 : 0;
+    }
+    return (alive == 3) ? 1 : 0;
+}`,
+    },
+    highlife: {
+      label: 'HighLife',
+      states: 2,
+      colors: ['#f6f7f7', '#0095C8'],
+      patterns: LIFE_PATTERNS,
+      code:
+`// HighLife — B36/S23 (like Life, but cells are also born with 6 neighbors)
+// state 0 = dead, state 1 = alive
+
+int nextState(int state, int[] neighbors) {
+    int alive = count(neighbors, 1);
+    if (state == 1) {
+        return (alive == 2 || alive == 3) ? 1 : 0;
+    }
+    return (alive == 3 || alive == 6) ? 1 : 0;
+}`,
+    },
+    seeds: {
+      label: 'Seeds',
+      states: 2,
+      colors: ['#f6f7f7', '#7c3aed'],
+      patterns: LIFE_PATTERNS,
+      code:
+`// Seeds — B2/S (every live cell dies every step; only births matter)
+// state 0 = dead, state 1 = alive
+
+int nextState(int state, int[] neighbors) {
+    if (state == 1) return 0;
+    int alive = count(neighbors, 1);
+    return (alive == 2) ? 1 : 0;
+}`,
+    },
+    daynight: {
+      label: 'Day & Night',
+      states: 2,
+      colors: ['#f6f7f7', '#059669'],
+      patterns: LIFE_PATTERNS,
+      code:
+`// Day & Night — B3678/S34678
+// state 0 = dead, state 1 = alive
+
+int nextState(int state, int[] neighbors) {
+    int alive = count(neighbors, 1);
+    if (state == 1) {
+        return (alive == 3 || alive == 4 || alive == 6 || alive == 7 || alive == 8) ? 1 : 0;
+    }
+    return (alive == 3 || alive == 6 || alive == 7 || alive == 8) ? 1 : 0;
+}`,
+    },
+    brian: {
+      label: "Brian's Brain",
+      states: 3,
+      colors: ['#f6f7f7', '#f59e0b', '#94a3b8'],
+      patterns: {},
+      code:
+`// Brian's Brain — a 3-state rule with no stable still lifes at all
+// state 0 = off, state 1 = firing, state 2 = dying (refractory)
+
+int nextState(int state, int[] neighbors) {
+    if (state == 1) return 2;                 // firing cells always die back...
+    if (state == 2) return 0;                 // ...then go dark for one full step
+    int firing = count(neighbors, 1);
+    return (firing == 2) ? 1 : 0;             // dark cells fire with exactly 2 firing neighbors
+}`,
+    },
+    wireworld: {
+      label: 'WireWorld',
+      states: 4,
+      colors: ['#f6f7f7', '#eab308', '#3b82f6', '#ef4444'],
+      patterns: WIREWORLD_PATTERNS,
+      code:
+`// WireWorld — a 4-state rule used to build logic circuits out of cells
+// state 0 = empty, state 1 = wire, state 2 = electron head, state 3 = electron tail
+
+int nextState(int state, int[] neighbors) {
+    if (state == 0) return 0;                 // empty stays empty
+    if (state == 2) return 3;                 // head -> tail
+    if (state == 3) return 1;                 // tail -> wire
+    // state == 1 (wire): becomes a head if exactly 1 or 2 neighbors are heads
+    int heads = count(neighbors, 2);
+    return (heads == 1 || heads == 2) ? 2 : 1;
+}`,
+    },
+    immigration: {
+      label: 'Immigration',
+      states: 3,
+      colors: ['#f6f7f7', '#0095C8', '#f472b6'],
+      patterns: LIFE_PATTERNS,
+      code:
+`// Immigration — a two-color variant of Life
+// state 0 = dead, state 1 = color A, state 2 = color B
+// a newborn cell takes the majority color of the 3 parents that created it
+
+int nextState(int state, int[] neighbors) {
+    int c1 = count(neighbors, 1);
+    int c2 = count(neighbors, 2);
+    int alive = c1 + c2;
+    if (state != 0) {
+        return (alive == 2 || alive == 3) ? state : 0;
+    }
+    if (alive == 3) {
+        return (c1 > c2) ? 1 : 2;
+    }
+    return 0;
+}`,
+    },
+  };
+
+  let currentPresetKey = 'life';
+  let currentPreset = PRESETS.life;
+
+  // ─────────────────────────────────────────────────────────────
+  //  PALETTE + PATTERN UI
+  // ─────────────────────────────────────────────────────────────
+  function renderPalette() {
+    const wrap = document.getElementById('ca-palette');
+    wrap.innerHTML = '';
+    currentPreset.colors.forEach(function (color, i) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ca-swatch' + (i === currentBrush ? ' is-active' : '');
+      btn.style.background = color;
+      btn.title = 'paint state ' + i;
+      btn.textContent = i;
+      btn.addEventListener('click', function () {
+        currentBrush = i;
+        wrap.querySelectorAll('.ca-swatch').forEach(function (s) { s.classList.remove('is-active'); });
+        btn.classList.add('is-active');
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function renderPatternOptions() {
+    const sel = document.getElementById('pattern-select');
+    const stampBtn = document.getElementById('stamp-btn');
+    sel.innerHTML = '';
+    const names = Object.keys(currentPreset.patterns || {});
+    if (!names.length) {
+      const opt = document.createElement('option');
+      opt.textContent = 'No preset patterns for this rule';
+      sel.appendChild(opt);
+      sel.disabled = true;
+      stampBtn.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    stampBtn.disabled = false;
+    names.forEach(function (name) {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  }
+
+  function loadPreset(key) {
+    currentPresetKey = key;
+    currentPreset = PRESETS[key];
+    currentBrush = currentPreset.states > 1 ? 1 : 0;
+    document.getElementById('code-editor').value = currentPreset.code;
+    document.getElementById('rule-pill').textContent = currentPreset.label;
+    renderPalette();
+    renderPatternOptions();
+    grid.fill(0); nextGrid.fill(0); generation = 0;
+    runRule();
+    updateMetrics();
+    draw();
+  }
+
+  document.querySelectorAll('.tot-code-toolbar [data-preset]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.tot-code-toolbar [data-preset]').forEach(function (b) { b.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+      loadPreset(btn.dataset.preset);
+    });
+  });
+
+  document.getElementById('stamp-btn').addEventListener('click', function () {
+    const sel = document.getElementById('pattern-select');
+    const pattern = (currentPreset.patterns || {})[sel.value];
+    if (!pattern) return;
+    grid.fill(0); nextGrid.fill(0); generation = 0;
+    const offX = Math.floor((COLS - pattern.w) / 2), offY = Math.floor((ROWS - pattern.h) / 2);
+    pattern.cells.forEach(function (c) {
+      const x = offX + c[0], y = offY + c[1];
+      if (x >= 0 && x < COLS && y >= 0 && y < ROWS) grid[y * COLS + x] = c[2];
+    });
+    updateMetrics();
+    draw();
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  //  PAINTING (click / drag on the grid)
+  // ─────────────────────────────────────────────────────────────
+  let isPainting = false, lastCell = null;
+
+  function eventPoint(e) {
+    if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+  }
+
+  function cellAt(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+    const px = (clientX - rect.left) * scaleX, py = (clientY - rect.top) * scaleY;
+    return { cx: Math.floor(px / CELL), cy: Math.floor(py / CELL) };
+  }
+
+  function setCell(cx, cy) {
+    if (cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) grid[cy * COLS + cx] = currentBrush;
+  }
+
+  function lineCells(x0, y0, x1, y1) {
+    const pts = [];
+    let dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0);
+    let sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1, err = dx + dy;
+    let x = x0, y = y0;
+    while (true) {
+      pts.push([x, y]);
+      if (x === x1 && y === y1) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x += sx; }
+      if (e2 <= dx) { err += dx; y += sy; }
+    }
+    return pts;
+  }
+
+  function handlePaintStart(e) {
+    isPainting = true;
+    const p = eventPoint(e);
+    const c = cellAt(p.x, p.y);
+    setCell(c.cx, c.cy);
+    lastCell = c;
+    draw();
+    e.preventDefault();
+  }
+  function handlePaintMove(e) {
+    if (!isPainting) return;
+    const p = eventPoint(e);
+    const c = cellAt(p.x, p.y);
+    if (lastCell) {
+      lineCells(lastCell.cx, lastCell.cy, c.cx, c.cy).forEach(function (pt) { setCell(pt[0], pt[1]); });
+    } else {
+      setCell(c.cx, c.cy);
+    }
+    lastCell = c;
+    draw();
+    e.preventDefault();
+  }
+  function handlePaintEnd() { isPainting = false; lastCell = null; }
+
+  canvas.addEventListener('mousedown', handlePaintStart);
+  canvas.addEventListener('mousemove', handlePaintMove);
+  window.addEventListener('mouseup', handlePaintEnd);
+  canvas.addEventListener('touchstart', handlePaintStart, { passive: false });
+  canvas.addEventListener('touchmove', handlePaintMove, { passive: false });
+  canvas.addEventListener('touchend', handlePaintEnd);
+
+  // ─────────────────────────────────────────────────────────────
+  //  PLAYBACK
+  // ─────────────────────────────────────────────────────────────
+  const playBtn = document.getElementById('play-btn');
+
+  function scheduleTick() {
+    if (!playing) return;
+    stepGeneration();
+    draw();
+    timer = setTimeout(scheduleTick, 1000 / speed);
+  }
+  function startPlaying() {
+    if (playing) return;
+    playing = true;
+    playBtn.textContent = '⏸ Pause';
+    scheduleTick();
+  }
+  function stopPlaying() {
+    playing = false;
+    playBtn.textContent = '▶ Play';
+    if (timer) clearTimeout(timer);
+  }
+
+  playBtn.addEventListener('click', function () { playing ? stopPlaying() : startPlaying(); });
+  document.getElementById('step-btn').addEventListener('click', function () { stepGeneration(); draw(); });
+  document.getElementById('run-btn').addEventListener('click', runRule);
+
+  document.getElementById('speed-slider').addEventListener('input', function (e) {
+    speed = parseInt(e.target.value, 10);
+    updateMetrics();
+  });
+  document.getElementById('wrap-check').addEventListener('change', function (e) {
+    wrapEdges = e.target.checked;
+  });
+  document.getElementById('random-btn').addEventListener('click', function () {
+    for (let i = 0; i < grid.length; i++) grid[i] = Math.random() < 0.35 ? 1 : 0;
+    generation = 0;
+    updateMetrics();
+    draw();
+  });
+  document.getElementById('clear-btn').addEventListener('click', function () {
+    grid.fill(0); nextGrid.fill(0); generation = 0;
+    updateMetrics();
+    draw();
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  //  INIT
+  // ─────────────────────────────────────────────────────────────
+  document.querySelector('.tot-code-toolbar [data-preset="life"]').classList.add('is-active');
+  loadPreset('life');
+})();
+</script>
+</body>
+</html>

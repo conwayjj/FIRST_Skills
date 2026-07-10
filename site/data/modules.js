@@ -55,4 +55,12 @@ window.TOT_MODULES = [
     status: 'available',
     href: 'site/modules/pidf-control.html',
   },
+  {
+    slug: 'cellular-automata',
+    title: 'Cellular Automata Grid',
+    category: 'Fun / Logic',
+    summary: "Write an int nextState(int state, int[] neighbors) rule and watch a whole grid evolve — Conway's Life, WireWorld, Brian's Brain, and your own multi-color rules, plus famous patterns like the Gosper Glider Gun.",
+    status: 'available',
+    href: 'site/modules/cellular-automata.html',
+  },
 ];
