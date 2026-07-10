@@ -53,16 +53,6 @@
           <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
         </div>
         <h1 class="tot-module-header__title">Swerve Drive</h1>
-        <p class="tot-module-header__lead">
-          Every module on a swerve chassis independently steers <em>and</em> drives, so unlike
-          mecanum there's no fixed roller angle to do the mixing for you — each module has to
-          compute its own target angle and speed from the chassis's desired motion. Write a Java
-          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
-          that calls <code style="font-family:var(--font-mono);">setModuleState(i, angle, speed)</code>
-          for all four modules. Steering motors are inertia-aware here too — torque limits, max
-          speed, and damping all push back, so a module commanded to spin 170° takes real time to
-          get there.
-        </p>
       </div>
 
       <div class="tot-workbench">
@@ -161,6 +151,23 @@
           </div>
         </div>
 
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Overview</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Swerve Drive</h2>
+        </div>
+        <p class="tot-module-header__lead" style="max-width:none;margin:14px 0 0;">
+          Every module on a swerve chassis independently steers <em>and</em> drives, so unlike
+          mecanum there's no fixed roller angle to do the mixing for you — each module has to
+          compute its own target angle and speed from the chassis's desired motion. Write a Java
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
+          that calls <code style="font-family:var(--font-mono);">setModuleState(i, angle, speed)</code>
+          for all four modules. Steering motors are inertia-aware here too — torque limits, max
+          speed, and damping all push back, so a module commanded to spin 170° takes real time to
+          get there.
+        </p>
       </div>
 
       <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">

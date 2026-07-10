@@ -53,14 +53,6 @@
           <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
         </div>
         <h1 class="tot-module-header__title">PIDF Control</h1>
-        <p class="tot-module-header__lead">
-          A simulated elevator carriage fights real gravity and friction. Write a Java
-          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">double calculate(double current, double target) { ... }</code>
-          — called at a fixed 50Hz, exactly like a real periodic control loop — and return the
-          motor output, -1..1. Gain fields you declare above it (kP, kI, kD, kF, an integral
-          accumulator, a previous error) persist between calls the same way instance fields would
-          on a real robot. Change the setpoint or hit "Disturb" and watch the response.
-        </p>
       </div>
 
       <div class="tot-workbench">
@@ -161,6 +153,21 @@
           </div>
         </div>
 
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Overview</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">PIDF Control</h2>
+        </div>
+        <p class="tot-module-header__lead" style="max-width:none;margin:14px 0 0;">
+          A simulated elevator carriage fights real gravity and friction. Write a Java
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">double calculate(double current, double target) { ... }</code>
+          — called at a fixed 50Hz, exactly like a real periodic control loop — and return the
+          motor output, -1..1. Gain fields you declare above it (kP, kI, kD, kF, an integral
+          accumulator, a previous error) persist between calls the same way instance fields would
+          on a real robot. Change the setpoint or hit "Disturb" and watch the response.
+        </p>
       </div>
 
       <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
