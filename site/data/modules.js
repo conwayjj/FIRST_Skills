@@ -67,7 +67,7 @@ window.TOT_MODULES = [
     slug: 'camera-fov-visualizer',
     title: 'Multi-Camera FOV Visualizer',
     category: 'Vision',
-    summary: 'Place two or more cameras on your robot, set their spacing, mounting angle, and field of view, and watch the view cones, coverage overlaps, and a sample frame from each camera update live.',
+    summary: 'Place two to four cameras on a 28in robot, model AprilTag detection range from resolution and decimation, and watch the view cones, coverage overlaps, and a sample frame from each camera update live.',
     status: 'available',
     href: 'site/modules/camera-fov-visualizer.html',
   },
