@@ -418,17 +418,35 @@ select.tot-select {
   border-radius: 4px;
 }
 .tot-cam-block__remove:hover { color: var(--danger); background: var(--surface); }
+.tot-cam-block__range { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.tot-cam-block__range strong { color: var(--text-strong); font-family: var(--font-mono); }
+
+/* ---------- Editable slider+number control rows (fractional values allowed) ---------- */
+.tot-number-wrap { display: flex; align-items: center; gap: 4px; min-width: 76px; justify-content: flex-end; flex: none; }
+.tot-number-input {
+  width: 58px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-strong);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  padding: 3px 5px;
+  text-align: right;
+}
+.tot-number-input:focus { outline: none; border-color: var(--tot-blue); box-shadow: 0 0 0 2px var(--focus-ring); }
+.tot-control-unit { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); min-width: 16px; }
 
 /* ---------- Per-camera sample-view cards (row under the top-down canvas) ---------- */
 .tot-camera-views {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
-  flex-wrap: wrap;
   margin-top: 16px;
 }
 .tot-camera-view-card {
-  flex: 1 1 260px;
-  min-width: 240px;
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
