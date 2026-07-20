@@ -63,4 +63,12 @@ window.TOT_MODULES = [
     status: 'available',
     href: 'site/modules/cellular-automata.html',
   },
+  {
+    slug: 'camera-fov-visualizer',
+    title: 'Multi-Camera FOV Visualizer',
+    category: 'Vision',
+    summary: 'Place two or more cameras on your robot, set their spacing, mounting angle, and field of view, and watch the view cones, coverage overlaps, and a sample frame from each camera update live.',
+    status: 'available',
+    href: 'site/modules/camera-fov-visualizer.html',
+  },
 ];

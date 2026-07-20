@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{if(localStorage.getItem('tot-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}</script>
+<title>Multi-Camera FOV Visualizer — That ONE Team Training Hub</title>
+<meta name="description" content="Place two or more cameras on your robot, set their spacing, mounting angle, and field of view, and see the view cones, coverage overlaps, and a sample frame from each camera update live.">
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/module.css">
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+      </div>
+    </div>
+  </div>
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="../../index.html">
+        <img class="tot-header__logo-img" src="../assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../README.md">Build Guide</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tot-section tot-section--tight tot-section--surface">
+    <div class="tot-container">
+
+      <div class="tot-breadcrumb">
+        <a href="../../index.html">Home</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <a href="../../index.html#modules">Modules</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <span class="tot-breadcrumb__current">Multi-Camera FOV Visualizer</span>
+      </div>
+
+      <div class="tot-module-header">
+        <div class="tot-module-header__badges">
+          <span class="tot-badge tot-badge--soft">Vision</span>
+          <span class="tot-badge tot-badge--brand">Visualization Tool</span>
+        </div>
+        <h1 class="tot-module-header__title">Multi-Camera FOV Visualizer</h1>
+        <p class="tot-module-header__lead">
+          A planning tool, not a coding lesson: drag the sliders to place two or more cameras on
+          your robot, set how far apart they are, which way they're aimed, and how wide each one
+          sees. The top-down view shows every camera's cone and where they overlap; the panels
+          below show what each camera's own frame would actually look like.
+        </p>
+      </div>
+
+      <div class="tot-workbench">
+
+        <!-- TOP-DOWN VIEW -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Top-Down Field View</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--soft" id="stat-pill">2 cameras</span>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+            <div class="tot-sim-canvas-wrap">
+              <canvas id="topdown-canvas" width="560" height="404" aria-label="Top-down view of camera positions, field-of-view cones, and overlap"></canvas>
+            </div>
+            <div class="tot-chart-legend" id="pair-distances" style="padding:8px 14px 0;"></div>
+            <div class="tot-metrics-row">
+              <div class="tot-metric-card"><div class="tot-metric-label">Cameras</div><div class="tot-metric-value" id="m-count">2</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Overlap Area</div><div class="tot-metric-value" id="m-overlap">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Coverage Width</div><div class="tot-metric-value" id="m-width">—</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Blind Gap</div><div class="tot-metric-value" id="m-gap">—</div></div>
+            </div>
+            <div class="tot-hint-text">Gold shading = seen by 2+ cameras at once. "Blind Gap" is the widest uncovered stretch between cones at roughly two-thirds of your view range.</div>
+          </div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Camera Rig Setup</span>
+            <div class="tot-panel__actions">
+              <button class="tot-btn tot-btn--sm tot-btn--secondary" id="shuffle-btn" type="button">↻ Shuffle Scene</button>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+            <div class="tot-control-group" style="max-height:none;">
+              <div class="tot-control-heading">Shared Settings</div>
+              <div class="tot-control-row">
+                <span class="tot-control-label">View Range</span>
+                <input type="range" class="tot-range" min="60" max="300" step="10" value="180" id="range-slider">
+                <span class="tot-control-value" id="range-val">180 in</span>
+              </div>
+
+              <div class="tot-control-heading">Cameras</div>
+              <div id="camera-list"><!-- rebuilt by JS --></div>
+              <button class="tot-btn tot-btn--sm tot-btn--secondary tot-btn--full" id="add-cam-btn" type="button" style="margin-top:2px;">+ Add Camera</button>
+              <div class="tot-hint-text" id="cam-limit-hint" style="padding-left:0;"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Sample Views</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">What each camera actually sees</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:14px;line-height:1.6;margin:14px 0 0;">
+          Each panel below is a simplified frame for that camera: field markers within its cone
+          are drawn at the correct bearing, and a gold band marks the slice of the frame that
+          another camera's cone also reaches at that camera's typical operating depth. A gold
+          ring around a marker means that specific object is visible to more than one camera —
+          useful when you're deciding which camera should be the "primary" for a given target.
+        </p>
+        <div class="tot-camera-views" id="camera-views"><!-- rebuilt by JS --></div>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Overview</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Why camera placement matters</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 0;">
+          A single camera on a robot only sees a wedge of the field — how wide that wedge is
+          depends on its field of view (FOV), and how far it reaches is your effective detection
+          range. Adding a second (or third) camera can widen your coverage, cover a blind spot
+          behind the first camera, or give you redundant eyes on the same target — but only if
+          you place it correctly. Mount two cameras too close together and pointed the same way
+          and you've basically built one camera twice; toe them outward and you can lose the
+          overlap you need for triangulation or hand-off between cameras entirely.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Objective</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Design a two-camera (or more) layout</h2>
+        </div>
+        <p style="color:var(--text-muted);font-size:15px;line-height:1.6;margin:14px 0 0;">
+          Try it: start from the default two-camera rig and toe the cameras <strong>outward</strong>
+          (increase the angle magnitude) to see coverage width grow but the near-field blind gap
+          open up right in front of the robot. Then toe them <strong>inward</strong> instead — the
+          blind gap closes, but you give up total field width. Add a third camera facing straight
+          back (angle near ±180° isn't supported here, but try a wide FOV near 150°) to cover
+          the space behind the robot. There's no single right answer — the sliders let you feel
+          the trade-off before you ever drill a mounting hole.
+        </p>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Reference</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Controls &amp; terms</h2>
+        </div>
+        <dl class="tot-reference-grid">
+          <dt>Position</dt><dd>Where the camera sits along the robot's mounting baseline, in inches left(-)/right(+) of center. The distance between two cameras is the difference between their positions.</dd>
+          <dt>Angle</dt><dd>Which way the camera is aimed, in degrees left(-)/right(+) of straight forward — its "toe-in" or "toe-out."</dd>
+          <dt>Field of View (FOV)</dt><dd>The full angular width of what the camera can see, in degrees. Defaults to 70°, a common wide-angle webcam spec.</dd>
+          <dt>View Range</dt><dd>How far out (in inches) cones are drawn and scored — a stand-in for your camera's effective detection distance.</dd>
+          <dt>Overlap Area</dt><dd>Share of all covered ground that's seen by two or more cameras at once.</dd>
+          <dt>Coverage Width</dt><dd>Total left-to-right span covered by any camera at your view range's far edge.</dd>
+          <dt>Blind Gap</dt><dd>The widest uncovered stretch between two cones, sampled at roughly two-thirds of your view range. "None" means the cones fully merge by that depth.</dd>
+        </dl>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="../assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="../../index.html">Home</a>
+      <a class="tot-footer__link" href="../../index.html#modules">Modules</a>
+      <a class="tot-footer__link" href="../README.md">Build Guide</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="../assets/js/nav.js"></script>
+<script src="../assets/js/theme.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ─────────────────────────────────────────────────────────────
+  //  CONFIG / STATE
+  // ─────────────────────────────────────────────────────────────
+  const PALETTE = ['#0095C8', '#B36BD4', '#2F9E5B', '#D64545']; // blue, purple, green, red
+  const OVERLAP_COLOR = '#FFC845'; // reserved for "seen by 2+ cameras", never assigned to a camera
+  const PRESETS = [ // starting offset/angle for each camera slot, so new cameras don't stack on top of existing ones
+    { offset: -6, angle: -8 },
+    { offset: 6, angle: 8 },
+    { offset: -18, angle: -22 },
+    { offset: 18, angle: 22 },
+  ];
+  const HALF_W = 220;   // world half-width, inches (-220..220)
+  const DEPTH = 320;    // world max depth, inches (0..320)
+  const MAX_CAMS = 4;
+  const MIN_CAMS = 2;
+
+  let nextId = 3;
+  let cams = [
+    { id: 1, color: PALETTE[0], offset: PRESETS[0].offset, angle: PRESETS[0].angle, fov: 70 },
+    { id: 2, color: PALETTE[1], offset: PRESETS[1].offset, angle: PRESETS[1].angle, fov: 70 },
+  ];
+  let range = 180;
+  let markers = [];
+  let rafPending = false;
+
+  const topCanvas = document.getElementById('topdown-canvas');
+  const topCtx = topCanvas.getContext('2d');
+
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function deg2rad(d) { return (d * Math.PI) / 180; }
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function hexToRgba(hex, a) {
+    const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  GEOMETRY
+  // ─────────────────────────────────────────────────────────────
+  // angle convention: 0 = straight forward (+y), positive = toward +x (right)
+  function cameraCoversPoint(cam, r, px, py) {
+    const dx = px - cam.offset, dy = py;
+    const dist = Math.hypot(dx, dy);
+    if (dist > r) return false;
+    if (dist < 0.0001) return true;
+    const worldAngle = (Math.atan2(dx, dy) * 180) / Math.PI;
+    let rel = worldAngle - cam.angle;
+    rel = ((rel + 180) % 360 + 360) % 360 - 180;
+    return Math.abs(rel) <= cam.fov / 2;
+  }
+
+  function coverageCount(px, py, r, excludeId) {
+    let n = 0;
+    for (const cam of cams) {
+      if (cam.id === excludeId) continue;
+      if (cameraCoversPoint(cam, r, px, py)) n++;
+    }
+    return n;
+  }
+
+  function sampleLineCoverage(y, r, step) {
+    const out = [];
+    for (let x = -HALF_W; x <= HALF_W; x += step) out.push(coverageCount(x, y, r, null) >= 1);
+    return out;
+  }
+
+  function spanWidth(arr, step) {
+    let first = -1, last = -1;
+    arr.forEach((v, i) => { if (v) { if (first < 0) first = i; last = i; } });
+    return first < 0 ? 0 : (last - first + 1) * step;
+  }
+
+  function interiorGap(arr, step) {
+    let first = -1, last = -1;
+    arr.forEach((v, i) => { if (v) { if (first < 0) first = i; last = i; } });
+    if (first < 0) return 0;
+    let gap = 0, inGap = false, gapStart = 0;
+    for (let i = first; i <= last; i++) {
+      if (!arr[i] && !inGap) { inGap = true; gapStart = i; }
+      if (arr[i] && inGap) { inGap = false; gap += (i - gapStart) * step; }
+    }
+    return gap;
+  }
+
+  function computeCoverageStats(r) {
+    const step = 6;
+    let coveredCells = 0, overlapCells = 0;
+    for (let y = 0; y <= DEPTH; y += step) {
+      for (let x = -HALF_W; x <= HALF_W; x += step) {
+        const c = coverageCount(x + step / 2, y + step / 2, r, null);
+        if (c >= 1) coveredCells++;
+        if (c >= 2) overlapCells++;
+      }
+    }
+    const farArr = sampleLineCoverage(Math.max(0, r - 1), r, 3);
+    const farWidth = spanWidth(farArr, 3);
+    const gapArr = sampleLineCoverage(r * 0.65, r, 3);
+    const gap = interiorGap(gapArr, 3);
+    return { coveredCells, overlapCells, farWidth, gap };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  SCENE (fixed field markers, shown in the sample views)
+  // ─────────────────────────────────────────────────────────────
+  const MARKER_SHAPES = ['cone', 'cube', 'tag'];
+  function generateMarkers() {
+    const out = [];
+    for (let i = 0; i < 6; i++) {
+      out.push({
+        x: rand(-HALF_W * 0.7, HALF_W * 0.7),
+        y: rand(35, DEPTH * 0.8),
+        shape: MARKER_SHAPES[Math.floor(rand(0, 3))],
+      });
+    }
+    return out;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  TOP-DOWN VIEW
+  // ─────────────────────────────────────────────────────────────
+  const MARGIN_T = 26, MARGIN_B = 78, MARGIN_L = 30, MARGIN_R = 30;
+  function worldToCanvas(x, y) {
+    const usableW = topCanvas.width - MARGIN_L - MARGIN_R;
+    const usableH = topCanvas.height - MARGIN_T - MARGIN_B;
+    const scaleX = usableW / (2 * HALF_W);
+    const scaleY = usableH / DEPTH;
+    return {
+      cx: MARGIN_L + (x + HALF_W) * scaleX,
+      cy: topCanvas.height - MARGIN_B - y * scaleY,
+    };
+  }
+
+  function drawTopDown() {
+    const ctx = topCtx, W = topCanvas.width, H = topCanvas.height;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = css('--grey-050');
+    ctx.fillRect(0, 0, W, H);
+
+    // reference rings every 60in (5ft), sampled through worldToCanvas
+    ctx.strokeStyle = css('--border');
+    ctx.fillStyle = css('--text-muted');
+    ctx.font = '10px ' + css('--font-mono');
+    ctx.lineWidth = 1;
+    for (let r = 60; r <= DEPTH; r += 60) {
+      ctx.beginPath();
+      for (let a = -90; a <= 90; a += 4) {
+        const rad = deg2rad(a);
+        const p = worldToCanvas(r * Math.sin(rad), r * Math.cos(rad));
+        if (a === -90) ctx.moveTo(p.cx, p.cy); else ctx.lineTo(p.cx, p.cy);
+      }
+      ctx.stroke();
+      const lbl = worldToCanvas(0, r);
+      ctx.textAlign = 'center';
+      ctx.fillText((r / 12).toFixed(0) + ' ft', lbl.cx, lbl.cy - 4);
+    }
+    // vertical reference lines every 60in
+    for (let x = -180; x <= 180; x += 60) {
+      const p0 = worldToCanvas(x, 0), p1 = worldToCanvas(x, DEPTH);
+      ctx.beginPath(); ctx.moveTo(p0.cx, p0.cy); ctx.lineTo(p1.cx, p1.cy); ctx.stroke();
+    }
+
+    // coverage heat cells
+    const step = 6;
+    for (let y = 0; y <= DEPTH; y += step) {
+      for (let x = -HALF_W; x <= HALF_W; x += step) {
+        let count = 0, soleColor = null;
+        for (const cam of cams) {
+          if (cameraCoversPoint(cam, range, x + step / 2, y + step / 2)) { count++; soleColor = cam.color; }
+        }
+        if (count === 0) continue;
+        const c0 = worldToCanvas(x, y), c1 = worldToCanvas(x + step, y + step);
+        const rx = Math.min(c0.cx, c1.cx), ry = Math.min(c0.cy, c1.cy);
+        const rw = Math.abs(c1.cx - c0.cx), rh = Math.abs(c1.cy - c0.cy);
+        ctx.fillStyle = count >= 2 ? hexToRgba(OVERLAP_COLOR, Math.min(0.75, 0.35 + 0.15 * (count - 2))) : hexToRgba(soleColor, 0.22);
+        ctx.fillRect(rx, ry, rw + 0.5, rh + 0.5);
+      }
+    }
+
+    // cone outlines
+    cams.forEach(cam => {
+      const steps = 28;
+      const start = cam.angle - cam.fov / 2, end = cam.angle + cam.fov / 2;
+      ctx.beginPath();
+      const origin = worldToCanvas(cam.offset, 0);
+      ctx.moveTo(origin.cx, origin.cy);
+      for (let i = 0; i <= steps; i++) {
+        const a = start + ((end - start) * i) / steps;
+        const rad = deg2rad(a);
+        const p = worldToCanvas(cam.offset + range * Math.sin(rad), range * Math.cos(rad));
+        ctx.lineTo(p.cx, p.cy);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = cam.color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // baseline + chassis reference
+    const b0 = worldToCanvas(-70, 0), b1 = worldToCanvas(70, 0);
+    ctx.fillStyle = 'rgba(0,0,0,0.06)';
+    ctx.fillRect(b0.cx, b0.cy - 3, b1.cx - b0.cx, 3);
+    ctx.strokeStyle = css('--border-strong');
+    ctx.beginPath(); ctx.moveTo(b0.cx, b0.cy); ctx.lineTo(b1.cx, b1.cy); ctx.stroke();
+    ctx.fillStyle = css('--text-muted');
+    ctx.font = '10px ' + css('--font-mono');
+    ctx.textAlign = 'center';
+    ctx.fillText('robot chassis (reference, 70in wide)', (b0.cx + b1.cx) / 2, b0.cy - 8);
+
+    // camera markers (triangles first, so labels always draw on top)
+    const markerPos = cams.map(cam => ({ cam, c: worldToCanvas(cam.offset, 0) }));
+    markerPos.forEach(({ cam, c }) => {
+      ctx.save();
+      ctx.translate(c.cx, c.cy);
+      ctx.rotate(deg2rad(cam.angle));
+      ctx.beginPath();
+      ctx.moveTo(0, -11); ctx.lineTo(7, 7); ctx.lineTo(-7, 7); ctx.closePath();
+      ctx.fillStyle = cam.color; ctx.fill();
+      ctx.strokeStyle = css('--text-strong'); ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.restore();
+    });
+    // labels — stagger vertically when two cameras sit close enough to collide
+    ctx.font = 'bold 11px ' + css('--font-mono');
+    ctx.textAlign = 'center';
+    let lastCx = -Infinity, row = 0;
+    markerPos.slice().sort((a, b) => a.c.cx - b.c.cx).forEach(({ cam, c }) => {
+      row = (c.cx - lastCx < 42) ? row + 1 : 0;
+      lastCx = c.cx;
+      ctx.fillStyle = cam.color;
+      ctx.fillText('Cam ' + cam.id, c.cx, c.cy + 24 + row * 12);
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  PER-CAMERA SAMPLE VIEW
+  // ─────────────────────────────────────────────────────────────
+  function azimuthToX(relDeg, fov, W) {
+    return clamp(((relDeg + fov / 2) / fov) * W, 0, W);
+  }
+
+  function depthToY(dist, r, horizonY, H) {
+    const f = clamp(dist / r, 0, 1);
+    return horizonY + (H - horizonY) * Math.pow(1 - f, 0.8);
+  }
+
+  function drawMarkerShape(ctx, shape, x, y, size) {
+    ctx.save();
+    ctx.translate(x, y);
+    if (shape === 'cone') {
+      ctx.fillStyle = '#F2A93B';
+      ctx.beginPath(); ctx.moveTo(0, -size); ctx.lineTo(size * 0.75, size); ctx.lineTo(-size * 0.75, size); ctx.closePath();
+      ctx.fill(); ctx.strokeStyle = '#8a5a12'; ctx.lineWidth = 1; ctx.stroke();
+    } else if (shape === 'cube') {
+      ctx.fillStyle = '#7C4DBE';
+      ctx.fillRect(-size * 0.8, -size * 0.8, size * 1.6, size * 1.6);
+      ctx.strokeStyle = '#3f2a63'; ctx.lineWidth = 1; ctx.strokeRect(-size * 0.8, -size * 0.8, size * 1.6, size * 1.6);
+    } else {
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(-size * 0.85, -size * 0.85, size * 1.7, size * 1.7);
+      ctx.fillStyle = '#f6f7f7';
+      ctx.fillRect(-size * 0.5, -size * 0.5, size, size);
+    }
+    ctx.restore();
+  }
+
+  function drawCameraView(cam) {
+    const canvas = document.getElementById('camview-canvas-' + cam.id);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const horizonY = H * 0.42;
+
+    const sky = ctx.createLinearGradient(0, 0, 0, horizonY);
+    sky.addColorStop(0, '#bfe4f2'); sky.addColorStop(1, '#e4f3f8');
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, horizonY);
+    const ground = ctx.createLinearGradient(0, horizonY, 0, H);
+    ground.addColorStop(0, '#c9cbcd'); ground.addColorStop(1, '#8f9294');
+    ctx.fillStyle = ground; ctx.fillRect(0, horizonY, W, H - horizonY);
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.moveTo(0, horizonY); ctx.lineTo(W, horizonY); ctx.stroke();
+
+    // depth reference lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '9px ' + css('--font-mono');
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    [0.25, 0.5, 0.75, 1].forEach(f => {
+      const y = depthToY(f * range, range, horizonY, H);
+      ctx.beginPath(); ctx.setLineDash([3, 3]); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillText(Math.round(f * range) + 'in', 4, y - 2);
+    });
+
+    // azimuth tick marks
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    const tickStep = cam.fov > 100 ? 30 : 10;
+    let tickIdx = 0;
+    for (let a = -Math.floor(cam.fov / 2 / tickStep) * tickStep; a <= cam.fov / 2; a += tickStep) {
+      const x = azimuthToX(a, cam.fov, W);
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 8); ctx.stroke();
+      if (tickIdx % 2 === 0) {
+        ctx.textAlign = 'center';
+        ctx.fillText((a > 0 ? '+' : '') + a + '°', x, 18);
+      }
+      tickIdx++;
+    }
+
+    // overlap bands: sample azimuth, test coverage by OTHER cameras at a representative depth
+    const refDepth = range * 0.6;
+    const N = 140;
+    let overlapCount = 0;
+    let i = 0;
+    const arr = [];
+    for (let k = 0; k <= N; k++) {
+      const a = -cam.fov / 2 + (cam.fov * k) / N;
+      const rad = deg2rad(cam.angle + a);
+      const px = cam.offset + refDepth * Math.sin(rad);
+      const py = refDepth * Math.cos(rad);
+      const covered = coverageCount(px, py, range, cam.id) >= 1;
+      arr.push(covered);
+      if (covered) overlapCount++;
+    }
+    ctx.fillStyle = hexToRgba(OVERLAP_COLOR, 0.34);
+    while (i <= N) {
+      if (arr[i]) {
+        let j = i; while (j <= N && arr[j]) j++;
+        const aStart = -cam.fov / 2 + (cam.fov * i) / N;
+        const aEnd = -cam.fov / 2 + (cam.fov * (j - 1)) / N;
+        const xStart = azimuthToX(aStart, cam.fov, W), xEnd = azimuthToX(aEnd, cam.fov, W);
+        ctx.fillRect(Math.min(xStart, xEnd), 0, Math.max(2, Math.abs(xEnd - xStart)), H);
+        i = j;
+      } else i++;
+    }
+
+    // field markers visible in this camera's cone
+    markers.forEach(m => {
+      const dx = m.x - cam.offset, dy = m.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > range || dist < 1) return;
+      const worldAngle = (Math.atan2(dx, dy) * 180) / Math.PI;
+      let rel = worldAngle - cam.angle;
+      rel = ((rel + 180) % 360 + 360) % 360 - 180;
+      if (Math.abs(rel) > cam.fov / 2) return;
+      const x = azimuthToX(rel, cam.fov, W);
+      const y = depthToY(dist, range, horizonY, H);
+      const size = 15 * (1 - clamp(dist / range, 0, 1) * 0.7);
+      const seenByOther = coverageCount(m.x, m.y, range, cam.id) >= 1;
+      if (seenByOther) {
+        ctx.beginPath(); ctx.arc(x, y, size + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = OVERLAP_COLOR; ctx.lineWidth = 2.5; ctx.stroke();
+      }
+      drawMarkerShape(ctx, m.shape, x, y, size);
+    });
+
+    const footer = document.getElementById('camview-footer-' + cam.id);
+    if (footer) {
+      const pct = Math.round((overlapCount / (N + 1)) * 100);
+      footer.textContent = `${cam.offset}in · ${cam.angle}° · ${cam.fov}° FOV — ${pct}% of frame overlaps another camera`;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  DOM: CONTROLS
+  // ─────────────────────────────────────────────────────────────
+  function nextColor() {
+    const used = cams.map(c => c.color);
+    return PALETTE.find(c => !used.includes(c)) || PALETTE[cams.length % PALETTE.length];
+  }
+
+  function renderControls() {
+    const list = document.getElementById('camera-list');
+    list.innerHTML = cams.map(cam => `
+      <div class="tot-cam-block" style="--cam-color:${cam.color}">
+        <div class="tot-cam-block__header">
+          <span class="tot-cam-block__name"><span class="tot-cam-block__swatch"></span>Camera ${cam.id}</span>
+          ${cams.length > MIN_CAMS ? `<button class="tot-cam-block__remove" data-remove="${cam.id}" type="button" aria-label="Remove Camera ${cam.id}">✕</button>` : ''}
+        </div>
+        <div class="tot-control-row">
+          <span class="tot-control-label">Position</span>
+          <input type="range" class="tot-range" min="-24" max="24" step="1" value="${cam.offset}" data-cam="${cam.id}" data-field="offset">
+          <span class="tot-control-value" data-readout="${cam.id}-offset">${cam.offset} in</span>
+        </div>
+        <div class="tot-control-row">
+          <span class="tot-control-label">Angle</span>
+          <input type="range" class="tot-range" min="-90" max="90" step="1" value="${cam.angle}" data-cam="${cam.id}" data-field="angle">
+          <span class="tot-control-value" data-readout="${cam.id}-angle">${cam.angle}°</span>
+        </div>
+        <div class="tot-control-row">
+          <span class="tot-control-label">Field of View</span>
+          <input type="range" class="tot-range" min="30" max="160" step="1" value="${cam.fov}" data-cam="${cam.id}" data-field="fov">
+          <span class="tot-control-value" data-readout="${cam.id}-fov">${cam.fov}°</span>
+        </div>
+      </div>
+    `).join('');
+
+    const addBtn = document.getElementById('add-cam-btn');
+    addBtn.style.display = cams.length >= MAX_CAMS ? 'none' : '';
+    document.getElementById('cam-limit-hint').textContent = cams.length >= MAX_CAMS ? `Maximum ${MAX_CAMS} cameras.` : '';
+  }
+
+  function buildCameraViewCards() {
+    const wrap = document.getElementById('camera-views');
+    wrap.innerHTML = cams.map(cam => `
+      <div class="tot-camera-view-card" style="--cam-color:${cam.color}">
+        <div class="tot-camera-view-card__header">
+          <span class="tot-camera-view-card__swatch"></span>
+          <span>Camera ${cam.id}</span>
+        </div>
+        <canvas id="camview-canvas-${cam.id}" width="300" height="170" aria-label="Simulated frame from Camera ${cam.id}"></canvas>
+        <div class="tot-camera-view-card__footer" id="camview-footer-${cam.id}"></div>
+      </div>
+    `).join('');
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  UPDATE / METRICS
+  // ─────────────────────────────────────────────────────────────
+  function updatePairDistances() {
+    const sorted = [...cams].sort((a, b) => a.offset - b.offset);
+    const parts = [];
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const d = Math.abs(sorted[i + 1].offset - sorted[i].offset);
+      parts.push(`<span class="tot-chart-legend__item">Cam ${sorted[i].id} ↔ Cam ${sorted[i + 1].id}: ${d} in</span>`);
+    }
+    document.getElementById('pair-distances').innerHTML = parts.join('');
+  }
+
+  function updateMetrics() {
+    const stats = computeCoverageStats(range);
+    document.getElementById('m-count').textContent = cams.length;
+    document.getElementById('stat-pill').textContent = cams.length + (cams.length === 1 ? ' camera' : ' cameras');
+    document.getElementById('m-overlap').textContent = stats.coveredCells > 0 ? Math.round((stats.overlapCells / stats.coveredCells) * 100) + '%' : '0%';
+    document.getElementById('m-width').textContent = stats.farWidth > 0 ? Math.round(stats.farWidth) + ' in' : '0 in';
+    document.getElementById('m-gap').textContent = stats.gap > 0.5 ? Math.round(stats.gap) + ' in' : 'None';
+  }
+
+  function updateAll() {
+    drawTopDown();
+    updateMetrics();
+    updatePairDistances();
+    cams.forEach(drawCameraView);
+  }
+
+  function scheduleUpdate() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => { rafPending = false; updateAll(); });
+  }
+
+  function rebuildAll() {
+    renderControls();
+    buildCameraViewCards();
+    updateAll();
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  //  WIRING
+  // ─────────────────────────────────────────────────────────────
+  document.getElementById('camera-list').addEventListener('input', e => {
+    const input = e.target.closest('input[data-cam]');
+    if (!input) return;
+    const id = parseInt(input.dataset.cam, 10), field = input.dataset.field;
+    const cam = cams.find(c => c.id === id);
+    if (!cam) return;
+    cam[field] = parseFloat(input.value);
+    const readout = document.querySelector(`[data-readout="${id}-${field}"]`);
+    if (readout) readout.textContent = field === 'offset' ? `${cam[field]} in` : `${cam[field]}°`;
+    scheduleUpdate();
+  });
+
+  document.getElementById('camera-list').addEventListener('click', e => {
+    const btn = e.target.closest('[data-remove]');
+    if (!btn) return;
+    const id = parseInt(btn.dataset.remove, 10);
+    if (cams.length <= MIN_CAMS) return;
+    cams = cams.filter(c => c.id !== id);
+    rebuildAll();
+  });
+
+  document.getElementById('add-cam-btn').addEventListener('click', () => {
+    if (cams.length >= MAX_CAMS) return;
+    const preset = PRESETS[cams.length] || { offset: 0, angle: 0 };
+    cams.push({ id: nextId++, color: nextColor(), offset: preset.offset, angle: preset.angle, fov: 70 });
+    rebuildAll();
+  });
+
+  document.getElementById('range-slider').addEventListener('input', e => {
+    range = parseFloat(e.target.value);
+    document.getElementById('range-val').textContent = range + ' in';
+    scheduleUpdate();
+  });
+
+  document.getElementById('shuffle-btn').addEventListener('click', () => {
+    markers = generateMarkers();
+    scheduleUpdate();
+  });
+
+  window.addEventListener('resize', () => scheduleUpdate());
+
+  // ─────────────────────────────────────────────────────────────
+  //  INIT
+  // ─────────────────────────────────────────────────────────────
+  markers = generateMarkers();
+  rebuildAll();
+})();
+</script>
+</body>
+</html>
