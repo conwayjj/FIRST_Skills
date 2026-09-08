@@ -16,6 +16,7 @@ copied into `assets/css` here.
 for GitHub Pages), the module scaffold (`modules/template.html`), and all modules
 in `data/modules.js` are built and marked `status: 'available'`:
 [`modules/inverse-kinematics.html`](modules/inverse-kinematics.html),
+[`modules/arm-feedforward.html`](modules/arm-feedforward.html),
 [`modules/filters.html`](modules/filters.html),
 [`modules/image-recognition.html`](modules/image-recognition.html),
 [`modules/mecanum-drive.html`](modules/mecanum-drive.html),

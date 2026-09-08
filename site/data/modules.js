@@ -16,6 +16,14 @@ window.TOT_MODULES = [
     href: 'site/modules/inverse-kinematics.html',
   },
   {
+    slug: 'arm-feedforward',
+    title: 'Arm Feedforward',
+    category: 'Controls',
+    summary: 'The Inverse Kinematics arm again, but every link now has real weight and gravity is on — write a Java step(dt) that commands raw motor power (not a target position) and has to feedforward-cancel gravity to hold its pose.',
+    status: 'available',
+    href: 'site/modules/arm-feedforward.html',
+  },
+  {
     slug: 'filters',
     title: 'Filters',
     category: 'Sensors',
