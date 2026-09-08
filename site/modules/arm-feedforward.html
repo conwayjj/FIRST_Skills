@@ -85,30 +85,26 @@
               <div class="tot-control-heading">Linear Actuator (Prismatic Joint)</div>
               <div class="tot-accent-block">
                 <div class="tot-accent-block__title">↕ Vertical Extension <span class="tot-accent-block__tag">Prismatic J0</span></div>
+                <div class="tot-hint-text" style="margin:0 0 10px;">Carriage mass is a fixed 1.0 kg — it's part of the mechanism, not something you tune per-run.</div>
                 <div class="tot-control-row">
                   <span class="tot-control-label">Max extension</span>
-                  <input type="range" class="tot-range" min="50" max="300" step="10" value="180" id="lin-max">
-                  <span class="tot-control-value" id="lin-max-val">180 px</span>
+                  <input type="range" class="tot-range" min="0.1" max="1" step="0.02" value="0.4" id="lin-max">
+                  <span class="tot-control-value" id="lin-max-val">0.40 m</span>
                 </div>
                 <div class="tot-control-row">
                   <span class="tot-control-label">Max force</span>
-                  <input type="range" class="tot-range" min="200" max="4000" step="50" value="1800" id="lin-force">
-                  <span class="tot-control-value" id="lin-force-val">1800</span>
+                  <input type="range" class="tot-range" min="10" max="300" step="5" value="80" id="lin-force">
+                  <span class="tot-control-value" id="lin-force-val">80 N</span>
                 </div>
                 <div class="tot-control-row">
                   <span class="tot-control-label">Free speed</span>
-                  <input type="range" class="tot-range" min="20" max="300" step="10" value="90" id="lin-freespeed">
-                  <span class="tot-control-value" id="lin-freespeed-val">90 px/s</span>
-                </div>
-                <div class="tot-control-row">
-                  <span class="tot-control-label">Carriage mass</span>
-                  <input type="range" class="tot-range" min="0.2" max="5" step="0.1" value="1.5" id="lin-mass">
-                  <span class="tot-control-value" id="lin-mass-val">1.5 kg</span>
+                  <input type="range" class="tot-range" min="0.1" max="2" step="0.05" value="0.5" id="lin-freespeed">
+                  <span class="tot-control-value" id="lin-freespeed-val">0.50 m/s</span>
                 </div>
                 <div class="tot-control-row">
                   <span class="tot-control-label">Target extension</span>
-                  <input type="range" class="tot-range" min="0" max="180" step="5" value="90" id="lin-target">
-                  <span class="tot-control-value" id="lin-target-val">90 px</span>
+                  <input type="range" class="tot-range" min="0" max="0.4" step="0.02" value="0.2" id="lin-target">
+                  <span class="tot-control-value" id="lin-target-val">0.20 m</span>
                 </div>
               </div>
 
@@ -126,8 +122,8 @@
               <div class="tot-control-heading">Rotational Motor</div>
               <div class="tot-control-row">
                 <span class="tot-control-label">Stall torque</span>
-                <input type="range" class="tot-range" min="10000" max="400000" step="5000" value="150000" id="motor-torque">
-                <span class="tot-control-value" id="motor-torque-val">150000</span>
+                <input type="range" class="tot-range" min="1" max="100" step="1" value="30" id="motor-torque">
+                <span class="tot-control-value" id="motor-torque-val">30 N·m</span>
               </div>
               <div class="tot-control-row">
                 <span class="tot-control-label">Free speed</span>
@@ -143,8 +139,8 @@
               <div class="tot-control-heading">Environment</div>
               <div class="tot-control-row">
                 <span class="tot-control-label">Gravity</span>
-                <input type="range" class="tot-range" min="0" max="800" step="10" value="350" id="gravity">
-                <span class="tot-control-value" id="gravity-val">350 px/s²</span>
+                <input type="range" class="tot-range" min="0" max="20" step="0.1" value="9.81" id="gravity">
+                <span class="tot-control-value" id="gravity-val">9.81 m/s²</span>
               </div>
 
               <div class="tot-control-heading">Live Power Outputs</div>
@@ -177,7 +173,7 @@
               <div class="tot-console__line--info">// You command raw motor power, -1..1 — not a position.</div>
               <div class="tot-console__line--info">// Prismatic: setLinearPower(power)</div>
               <div class="tot-console__line--info">// Rotational: setPower(i, power)  — i = 0..numRotJoints-1</div>
-              <div class="tot-console__line--info">// Gravity feedforward: getGravityTorque(i)</div>
+              <div class="tot-console__line--info">// Gravity feedforward is yours to write — see gravityTorqueAt(...) above step(dt)</div>
               <div class="tot-console__line--info">// Targets: targetExtension, targetAngles[], extError, angleErrors[]</div>
               <div class="tot-console__line--info">// Call stopSim() when converged.</div>
             </div>
@@ -216,8 +212,12 @@
           target the same way it did in <a href="pidf-control.html">PIDF Control</a> —
           gravity here is worse, because it changes with pose instead of staying
           constant, so the feedforward term has to be recomputed every frame from
-          the arm's actual mass, link length, and current angle. <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">getGravityTorque(i)</code>
-          gives you exactly that number, live.
+          the arm's actual mass, link length, and current angle. There's no
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">getGravityTorque()</code>
+          handed to you for that — working it out is the point. The default code
+          includes <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">gravityTorqueAt(...)</code>,
+          a worked example sitting right above <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
+          as ordinary, fully editable code — read it, change it, or replace it.
         </p>
       </div>
 
@@ -228,18 +228,18 @@
         </div>
         <dl class="tot-reference-grid">
           <dt>setLinearPower(power)</dt><dd>Prismatic joint motor output, -1..1.</dd>
-          <dt>getExtension() / getExtVelocity()</dt><dd>Current extension (px) and velocity (px/s).</dd>
+          <dt>getExtension() / getExtVelocity()</dt><dd>Current extension (m) and velocity (m/s).</dd>
           <dt>setPower(i, power)</dt><dd>Rotational joint i motor output, -1..1.</dd>
           <dt>getAngle(i) / getVelocity(i)</dt><dd>Current angle (°) and angular velocity (°/s) of joint i.</dd>
-          <dt>getGravityTorque(i)</dt><dd>Live gravity torque on joint i from every link beyond it — positive means gravity is trying to increase the angle. Divide by the motor's stall torque (negated) for a holding feedforward term.</dd>
-          <dt>getMass(i) / getLinearMass()</dt><dd>Segment mass (kg) / carriage mass (kg).</dd>
+          <dt>getMass(i) / getLinearMass()</dt><dd>Segment mass (kg) / fixed carriage mass (kg).</dd>
+          <dt>gravityTorqueAt(...)</dt><dd>Not provided by the engine — this is the exercise. The default code has a worked, editable example above step(dt); write your own or modify it.</dd>
           <dt>stopSim()</dt><dd>Call once every error is small.</dd>
           <dt>println(...)</dt><dd>Write a line to the console panel below the editor.</dd>
-          <dt>endX, endY</dt><dd>Current end-effector position.</dd>
-          <dt>targetExtension, targetAngles[]</dt><dd>The pose set on the left (or solved from your last workspace click).</dd>
+          <dt>endX, endY</dt><dd>Current end-effector position (m).</dd>
+          <dt>targetExtension, targetAngles[]</dt><dd>The pose set on the left (or solved from your last workspace click) — extension in m, angles in °.</dd>
           <dt>extError, angleErrors[]</dt><dd>target - current, already shortest-path wrapped for angles.</dd>
-          <dt>numRotJoints, lengths[], masses[]</dt><dd>Configured joint count, link lengths, and link masses.</dd>
-          <dt>maxExtension, linMass, gravity</dt><dd>Max extension (px), carriage mass (kg), and gravity strength (px/s²).</dd>
+          <dt>numRotJoints, lengths[], masses[]</dt><dd>Configured joint count, link lengths (m), and link masses (kg).</dd>
+          <dt>maxExtension, linMass, gravity</dt><dd>Max extension (m), fixed carriage mass (kg), and gravity (m/s²).</dd>
         </dl>
       </div>
 
@@ -284,24 +284,29 @@ const editor = document.getElementById('code-editor');
 const W = canvas.width, H = canvas.height;
 // Base origin is near the bottom-center
 const BASE_X = W / 2, BASE_Y = H - 40;
+// All physics (lengths, mass, force, torque) is real SI units — meters,
+// kg, N, N·m — so a student's feedforward math means something outside
+// this page too. PX_PER_M is a pure rendering scale, never touched by
+// any physics formula.
+const PX_PER_M = 150;
 
 let cfg = {
-  linMax: 180,        // max extension in px
-  linForce: 1800,      // stall force
-  linFreeSpeed: 90,    // px/s free speed (zero-load speed)
-  linMass: 1.5,         // carriage mass, kg
-  targetExt: 90,
+  linMax: 0.4,          // max extension, m
+  linForce: 80,           // stall force, N
+  linFreeSpeed: 0.5,      // free (zero-load) speed, m/s
+  linMass: 1.0,             // fixed carriage mass, kg — not user-adjustable
+  targetExt: 0.2,
 
   numRot: 2,
-  rotLengths: [100, 80, 65],
-  masses: [1.2, 0.9, 0.6],
-  targetAngles: [30, -20, 0],
+  rotLengths: [0.6, 0.5, 0.4],  // m
+  masses: [1.2, 0.9, 0.6],        // kg
+  targetAngles: [30, -20, 0],       // °
 
-  motorTorque: 150000,  // rotational motor stall torque
-  maxSpeed: 140,          // rotational free speed, deg/s
+  motorTorque: 30,   // rotational motor stall torque, N·m
+  maxSpeed: 140,       // rotational free speed, deg/s
   damping: 0.9,
 
-  gravity: 350,           // px/s²
+  gravity: 9.81,        // m/s²
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -333,32 +338,35 @@ function totalMassAbove() {
 //  computeFK(anglesArr?, extVal?) — pass overrides to evaluate a
 //  hypothetical pose (used for the target marker, the offline IK
 //  solve, and gravity torque) without touching live physics state.
+//  Works entirely in WORLD METERS: origin at the actuator's base,
+//  x right, y up — angle 0 points straight up, 90 points right
+//  (a compass bearing). toCanvas() is the only place this ever
+//  gets converted to pixels, purely for drawing.
 //  Returns array of points: [base, actuator-top, j1, j2, ..., end]
 // ─────────────────────────────────────────────────────────────
 function computeFK(anglesArr, extVal) {
   const angles = anglesArr || joints.map(j => j.angle);
   const ext = (extVal !== undefined) ? extVal : lin.pos;
-  const pts = [];
-  pts.push({ x: BASE_X, y: BASE_Y });
-  const topY = BASE_Y - ext;
-  pts.push({ x: BASE_X, y: topY });
+  const pts = [{ x: 0, y: 0 }, { x: 0, y: ext }];
   let angle = 0;
-  let cx = BASE_X, cy = topY;
+  let cx = 0, cy = ext;
   for (let i = 0; i < cfg.numRot; i++) {
     angle += angles[i];
-    const rad = (angle - 90) * Math.PI / 180;
-    const nx = cx + cfg.rotLengths[i] * Math.cos(rad);
-    const ny = cy + cfg.rotLengths[i] * Math.sin(rad);
+    const rad = angle * Math.PI / 180;
+    const nx = cx + cfg.rotLengths[i] * Math.sin(rad);
+    const ny = cy + cfg.rotLengths[i] * Math.cos(rad);
     pts.push({ x: nx, y: ny });
     cx = nx; cy = ny;
   }
   return pts;
 }
 
+function toCanvas(pt) { return { x: BASE_X + pt.x * PX_PER_M, y: BASE_Y - pt.y * PX_PER_M }; }
+function fromCanvas(pt) { return { x: (pt.x - BASE_X) / PX_PER_M, y: -(pt.y - BASE_Y) / PX_PER_M }; }
+
 function getEndEffector() {
   const pts = computeFK();
-  const end = pts[pts.length - 1];
-  return { x: end.x - BASE_X, y: -(end.y - BASE_Y) };
+  return pts[pts.length - 1];
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -373,9 +381,8 @@ function computePE(anglesArr) {
   let pe = 0;
   for (let i = 0; i < cfg.numRot; i++) {
     const from = pts[i + 1], to = pts[i + 2];
-    const comY = (from.y + to.y) / 2;
-    const height = BASE_Y - comY;
-    pe += cfg.masses[i] * cfg.gravity * height;
+    const comHeight = (from.y + to.y) / 2; // meters, y-up, base = 0
+    pe += cfg.masses[i] * cfg.gravity * comHeight;
   }
   return pe;
 }
@@ -404,7 +411,13 @@ function jointInertiaRaw(k) {
 // ─────────────────────────────────────────────────────────────
 //  PHYSICS STEP  (DC-motor torque/force model: output = power*stall
 //  minus a back-EMF term proportional to velocity, so each joint
-//  naturally has a top speed under its own power.)
+//  naturally has a top speed under its own power. Real SI masses and
+//  torques make some configurations physically stiff — a light,
+//  short link under a strong motor has a tiny time constant — so the
+//  back-EMF term is integrated implicitly (backward Euler). That's
+//  unconditionally stable for any dt, unlike the explicit update this
+//  used before switching from arbitrary units to kg/N·m, which could
+//  blow up whenever a frame's dt exceeded that time constant.)
 // ─────────────────────────────────────────────────────────────
 function physicsStep(dt) {
   // — Linear actuator —
@@ -412,10 +425,10 @@ function physicsStep(dt) {
     const m = totalMassAbove();
     const freeSpeed = cfg.linFreeSpeed || 1;
     const power = Math.max(-1, Math.min(1, lin.power));
-    const motorForce = power * cfg.linForce - (cfg.linForce / freeSpeed) * lin.vel;
+    const driveForce = power * cfg.linForce;
+    const backEmf = cfg.linForce / freeSpeed; // N per m/s
     const gravityForce = -cfg.gravity * m; // gravity always pulls extension down
-    const accel = (motorForce + gravityForce) / m;
-    lin.vel += accel * dt;
+    lin.vel = (lin.vel + (driveForce + gravityForce) / m * dt) / (1 + (backEmf / m) * dt);
     lin.vel *= Math.pow(cfg.damping, dt);
     lin.pos += lin.vel * dt;
     if (lin.pos < 0) { lin.pos = 0; if (lin.vel < 0) lin.vel = 0; }
@@ -427,43 +440,50 @@ function physicsStep(dt) {
   for (let i = 0; i < cfg.numRot; i++) {
     const j = joints[i];
     const power = Math.max(-1, Math.min(1, j.power));
-    const velRad = j.vel * Math.PI / 180;
-    const motorTorque = power * cfg.motorTorque - (cfg.motorTorque / freeSpeedRad) * velRad;
-    const gTorque = gravityTorque(i);
+    const driveTorque = power * cfg.motorTorque;
+    const backEmf = cfg.motorTorque / freeSpeedRad; // N·m per rad/s
+    const gTorque = gravityTorque(i); // treated as constant over this substep
     const I = jointInertiaRaw(i);
-    const accelRad = (motorTorque + gTorque) / I;
-    j.vel += accelRad * (180 / Math.PI) * dt;
+    let velRad = j.vel * Math.PI / 180;
+    velRad = (velRad + (driveTorque + gTorque) / I * dt) / (1 + (backEmf / I) * dt);
+    j.vel = velRad * (180 / Math.PI);
     j.vel *= Math.pow(cfg.damping, dt);
     j.angle += j.vel * dt;
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-//  OFFLINE POSE SOLVE  (runs once on click — a synchronous CCD pass,
-//  identical in spirit to the default solver in Inverse Kinematics,
-//  just used here to fill in a target pose instead of driving motion
-//  frame by frame.)
+//  OFFLINE POSE SOLVE  (runs once on click — a CCD pass over the
+//  rotational joints, identical in spirit to the default solver in
+//  Inverse Kinematics, interleaved with an exact extension
+//  correction: since the prismatic joint only ever translates the
+//  whole chain straight up, closing its remaining y-gap after each
+//  CCD sweep doesn't disturb the angles at all, so this converges
+//  tightly onto the clicked point instead of the fixed one-shot
+//  height guess the old version used.)
 // ─────────────────────────────────────────────────────────────
-function toWorld(pt) { return { x: pt.x - BASE_X, y: -(pt.y - BASE_Y) }; }
-
 function solveTargetPose(tx, ty) {
   const n = cfg.numRot;
   let angles = new Array(n).fill(0);
   let ext = Math.max(0, Math.min(cfg.linMax, ty - totalRotLen() * 0.5));
-  for (let iter = 0; iter < 40; iter++) {
+  for (let iter = 0; iter < 30; iter++) {
     for (let i = n - 1; i >= 0; i--) {
-      const pts = computeFK(angles, ext).map(toWorld);
+      const pts = computeFK(angles, ext);
       const pivot = pts[i + 1];
       const end = pts[pts.length - 1];
       const toEndX = end.x - pivot.x, toEndY = end.y - pivot.y;
       const toTgtX = tx - pivot.x, toTgtY = ty - pivot.y;
-      const angToEnd = Math.atan2(toEndY, toEndX) * 180 / Math.PI;
-      const angToTgt = Math.atan2(toTgtY, toTgtX) * 180 / Math.PI;
+      // atan2 args are (x, y) here, not the usual (y, x) — computeFK's
+      // bearing convention has sin()->x and cos()->y (0° = up, clockwise).
+      const angToEnd = Math.atan2(toEndX, toEndY) * 180 / Math.PI;
+      const angToTgt = Math.atan2(toTgtX, toTgtY) * 180 / Math.PI;
       let delta = angToTgt - angToEnd;
       while (delta > 180) delta -= 360;
       while (delta < -180) delta += 360;
       angles[i] += delta;
     }
+    const end = computeFK(angles, ext)[n + 1];
+    ext = Math.max(0, Math.min(cfg.linMax, ext + (ty - end.y)));
   }
   angles = angles.map(a => ((a % 360) + 540) % 360 - 180);
   return { angles, ext };
@@ -478,6 +498,7 @@ let lastTime = null;
 let frameCount = 0;
 let converged = false;
 let stepFn = null;
+let clickTarget = null; // {x,y} world meters — exactly where the student clicked, for the reticle
 
 function angleErr(target, current) {
   let e = target - current;
@@ -553,18 +574,40 @@ function getAngle(i) { return (i >= 0 && i < cfg.numRot) ? joints[i].angle : 0; 
 function getVelocity(i) { return (i >= 0 && i < cfg.numRot) ? joints[i].vel : 0; }
 function getMass(i) { return (i >= 0 && i < cfg.numRot) ? cfg.masses[i] : 0; }
 function getLinearMass() { return cfg.linMass; }
-function getGravityTorque(i) { return gravityTorque(i); }
+// No getGravityTorque() here — that calculation is the exercise, not
+// a library call. gravityTorqueAt(...) in the default starter code is
+// a worked, editable example of it; the physics engine's own internal
+// gravityTorque(k) (above, used to actually simulate the arm) is not
+// exposed to student code at all.
 
 // ─────────────────────────────────────────────────────────────
 //  CODE COMPILATION
 //  A lightweight Java-flavored-JS subset: swaps a few Java keywords
-//  and Math.* spellings so the student's step(dt) can run directly
-//  as JS. This is a stand-in until the site has a real Java runtime
-//  (see /site/README.md — "Executing student code").
+//  and Math.* spellings, and rewrites Java-style function headers
+//  (return-type + typed params) into plain JS `function name(...)`,
+//  so the student's step(dt) — and any helper functions/fields they
+//  declare above it — can run directly as JS. This is a stand-in
+//  until the site has a real Java runtime (see /site/README.md —
+//  "Executing student code").
 // ─────────────────────────────────────────────────────────────
 const runBtn = document.getElementById('run-btn');
 
-const javaToJS = src => src
+// Converts "double foo(int a, double[] b) {" into "function foo(a, b) {" —
+// keeps helper-function declarations usable without a real type system.
+function convertFunctionDecls(src) {
+  return src.replace(/\b(?:void|double|int|float|long|boolean)\s+(\w+)\s*\(([^)]*)\)\s*\{/g,
+    (m, name, params) => {
+      const names = params.split(',').map(p => {
+        const t = p.trim();
+        if (!t) return '';
+        const parts = t.split(/\s+/);
+        return parts[parts.length - 1];
+      }).filter(Boolean).join(', ');
+      return `function ${name}(${names}) {`;
+    });
+}
+
+const javaToJS = src => convertFunctionDecls(src)
   .replace(/\bdouble\b/g, 'let').replace(/\bint\b/g, 'let').replace(/\bfloat\b/g, 'let')
   .replace(/\bboolean\b/g, 'let').replace(/\blong\b/g, 'let').replace(/\bString\b/g, 'let')
   .replace(/\bMath\.(atan2|acos|asin|sqrt|cos|sin|tan|pow|abs|min|max|PI|floor|ceil|round|signum)\b/g,
@@ -572,64 +615,65 @@ const javaToJS = src => src
   .replace(/\bSystem\.out\.println\b/g, '__println').replace(/\bprintln\b/g, '__println')
   .replace(/\bstopSim\b/g, '__stopSim');
 
+// step(dt) itself keeps a site-defined parameter list (extension, angles[],
+// etc. are ambient values, not something the student's own "void step(double
+// dt)" signature declares) — so its body is located by brace-matching and
+// spliced into a function whose signature we control, while everything
+// above it (fields, helper functions like gravityTorqueAt) is transpiled
+// as-is and executed once, exactly like a real class body would be.
+function splitPreambleAndStep(src) {
+  const headerMatch = src.match(/void\s+step\s*\(\s*(?:double\s+)?dt\s*\)\s*\{/);
+  if (!headerMatch) return null;
+  const startIdx = headerMatch.index + headerMatch[0].length;
+  let depth = 1, i = startIdx;
+  for (; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') { depth--; if (depth === 0) break; }
+  }
+  if (depth !== 0) throw new Error('Mismatched braces — check that every { has a matching }.');
+  return { preamble: src.slice(0, headerMatch.index), stepBody: src.slice(startIdx, i) };
+}
+
 function compileAndRun() {
   clearOutput();
   const src = editor.value;
-  const stepMatch = src.match(/void\s+step\s*\(\s*(?:double\s+)?dt\s*\)\s*\{([\s\S]*)\}/);
-  if (!stepMatch) {
+  const split = splitPreambleAndStep(src);
+  if (!split) {
     addOutput('Error: cannot find  void step(double dt) { ... }', 'error');
     return;
   }
-  const initSrc = src.slice(0, stepMatch.index);
-  const stepSrc = stepMatch[1];
-
-  const initLogs = [];
-  try {
-    const initFn = new Function(
-      'numRotJoints', 'lengths', 'masses', 'maxExtension', 'linMass', 'gravity', '__println',
-      '"use strict";\n' + javaToJS(initSrc)
-    );
-    initFn(cfg.numRot, cfg.rotLengths.slice(0, cfg.numRot), cfg.masses.slice(0, cfg.numRot),
-      cfg.linMax, cfg.linMass, cfg.gravity,
-      (...a) => initLogs.push({ t: a.join(' '), c: 'line' }));
-    initLogs.forEach(l => addOutput(l.t, l.c));
-  } catch (e) { addOutput('Init error: ' + e.message, 'error'); return; }
 
   let printCount = 0, printWarned = false;
   const MAX_PRINTS = 20;
+  const print = (...a) => {
+    if (++printCount <= MAX_PRINTS) addOutput(a.join(' '), 'line');
+    else if (!printWarned) { printWarned = true; addOutput('(println limited in step())', 'warn'); }
+  };
+  const stop = () => {
+    converged = true;
+    stopSim(true);
+    addOutput(`✓ Converged in ${frameCount} frames.`, 'ok');
+  };
+
   try {
-    const rawStep = new Function(
-      'dt',
-      'extension', 'extVelocity',
-      'angles', 'velocities',
-      'endX', 'endY',
-      'targetExtension', 'targetAngles',
-      'extError', 'angleErrors',
+    const factory = new Function(
       'setLinearPower', 'setPower',
       'getExtension', 'getExtVelocity', 'getAngle', 'getVelocity',
-      'getMass', 'getLinearMass', 'getGravityTorque',
+      'getMass', 'getLinearMass',
       'numRotJoints', 'lengths', 'masses', 'maxExtension', 'linMass', 'gravity',
       '__println', '__stopSim',
-      '"use strict";\n' + javaToJS(stepSrc)
+      '"use strict";\n' + javaToJS(split.preamble) +
+      '\nreturn function(dt, extension, extVelocity, angles, velocities, endX, endY, targetExtension, targetAngles, extError, angleErrors) {\n' +
+      javaToJS(split.stepBody) + '\n};'
     );
-    stepFn = (dt, extPos, extVel, angs, vels, ex, ey, tExt, tAngs, extErr, angErrs) => {
-      const print = (...a) => {
-        if (++printCount <= MAX_PRINTS) addOutput(a.join(' '), 'line');
-        else if (!printWarned) { printWarned = true; addOutput('(println limited in step())', 'warn'); }
-      };
-      const stop = () => {
-        converged = true;
-        stopSim(true);
-        addOutput(`✓ Converged in ${frameCount} frames.`, 'ok');
-      };
-      rawStep(dt, extPos, extVel, angs, vels, ex, ey, tExt, tAngs, extErr, angErrs,
-        setLinearPower, setPower,
-        getExtension, getExtVelocity, getAngle, getVelocity,
-        getMass, getLinearMass, getGravityTorque,
-        cfg.numRot, cfg.rotLengths.slice(0, cfg.numRot), cfg.masses.slice(0, cfg.numRot),
-        cfg.linMax, cfg.linMass, cfg.gravity,
-        print, stop);
-    };
+    stepFn = factory(
+      setLinearPower, setPower,
+      getExtension, getExtVelocity, getAngle, getVelocity,
+      getMass, getLinearMass,
+      cfg.numRot, cfg.rotLengths.slice(0, cfg.numRot), cfg.masses.slice(0, cfg.numRot),
+      cfg.linMax, cfg.linMass, cfg.gravity,
+      print, stop
+    );
     addOutput('// step() compiled OK.', 'info');
     startSim();
   } catch (e) { addOutput('Compile error: ' + e.message, 'error'); stepFn = null; }
@@ -646,7 +690,7 @@ function css(v) { return getComputedStyle(document.documentElement).getPropertyV
 function drawGrid() {
   ctx.clearRect(0, 0, W, H);
   ctx.strokeStyle = css('--border'); ctx.lineWidth = 0.5;
-  const step = 50;
+  const step = 30; // 0.2m per gridline at PX_PER_M=150
   for (let x = 0; x <= W; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
   for (let y = 0; y <= H; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
   ctx.strokeStyle = css('--text-muted'); ctx.lineWidth = 0.8;
@@ -656,25 +700,33 @@ function drawGrid() {
   ctx.textAlign = 'left';
   for (let x = -Math.floor((W/2)/step)*step; x <= W/2; x += step) {
     if (x === 0) continue;
-    ctx.fillText(x.toFixed(0), BASE_X + x + 2, BASE_Y - 2);
+    ctx.fillText((x / PX_PER_M).toFixed(1), BASE_X + x + 2, BASE_Y - 2);
   }
   ctx.textAlign = 'right';
   for (let y = -Math.floor((H - BASE_Y)/step)*step; y <= BASE_Y; y += step) {
     if (y === 0) continue;
-    ctx.fillText(y.toFixed(0), BASE_X - 2, BASE_Y - y - 2);
+    ctx.fillText((y / PX_PER_M).toFixed(1), BASE_X - 2, BASE_Y - y - 2);
   }
 }
 
 function drawTarget() {
-  const n = cfg.numRot;
-  const pts = computeFK(cfg.targetAngles.slice(0, n), cfg.targetExt);
-  const end = pts[pts.length - 1];
-  const tx = end.x, ty = end.y;
-  const totalRot = totalRotLen();
+  // The reticle always sits exactly where the student last clicked —
+  // it never shifts to wherever the solver happened to land — falling
+  // back to the solved pose's own end effector only when there's no
+  // click yet (e.g. targets set purely via the sliders).
+  let world;
+  if (clickTarget) {
+    world = clickTarget;
+  } else {
+    const n = cfg.numRot;
+    world = computeFK(cfg.targetAngles.slice(0, n), cfg.targetExt)[n + 1];
+  }
+  const { x: tx, y: ty } = toCanvas(world);
+  const totalRot = totalRotLen() * PX_PER_M;
   ctx.save();
   ctx.strokeStyle = 'rgba(0,149,200,0.18)'; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
   ctx.beginPath(); ctx.arc(BASE_X, BASE_Y, totalRot, Math.PI, 0, false); ctx.stroke();
-  ctx.beginPath(); ctx.arc(BASE_X, BASE_Y - cfg.linMax, totalRot, Math.PI, 0, false); ctx.stroke();
+  ctx.beginPath(); ctx.arc(BASE_X, BASE_Y - cfg.linMax * PX_PER_M, totalRot, Math.PI, 0, false); ctx.stroke();
   ctx.setLineDash([]);
   ctx.strokeStyle = css('--text-strong'); ctx.lineWidth = 1.5;
   const r = 12;
@@ -720,7 +772,7 @@ function drawArm(pts) {
   ctx.fillStyle = css('--text-muted');
   ctx.font = '9px ' + css('--font-mono');
   ctx.textAlign = 'left';
-  ctx.fillText(lin.pos.toFixed(0) + 'px', base.x + 13, top.y + 4);
+  ctx.fillText(lin.pos.toFixed(2) + 'm', base.x + 13, top.y + 4);
   ctx.restore();
 
   const nRot = pts.length - 2;
@@ -781,7 +833,7 @@ function drawArm(pts) {
 
 function draw() {
   drawGrid(); drawTarget();
-  const pts = computeFK();
+  const pts = computeFK().map(toCanvas);
   drawArm(pts);
 }
 
@@ -790,14 +842,14 @@ function draw() {
 // ─────────────────────────────────────────────────────────────
 function updateMetrics() {
   const ee = getEndEffector();
-  document.getElementById('m-ex').textContent = ee.x.toFixed(1);
-  document.getElementById('m-ey').textContent = ee.y.toFixed(1);
-  document.getElementById('m-ext').textContent = lin.pos.toFixed(1);
+  document.getElementById('m-ex').textContent = ee.x.toFixed(3);
+  document.getElementById('m-ey').textContent = ee.y.toFixed(3);
+  document.getElementById('m-ext').textContent = lin.pos.toFixed(3);
 
   const extErr = Math.abs(cfg.targetExt - lin.pos);
   const extErrEl = document.getElementById('m-exterr');
-  extErrEl.textContent = extErr.toFixed(1);
-  extErrEl.className = 'tot-metric-value ' + (simRunning ? 'tot-metric-value--running' : extErr < 3 ? 'tot-metric-value--good' : extErr < 20 ? '' : 'tot-metric-value--bad');
+  extErrEl.textContent = extErr.toFixed(3);
+  extErrEl.className = 'tot-metric-value ' + (simRunning ? 'tot-metric-value--running' : extErr < 0.01 ? 'tot-metric-value--good' : extErr < 0.05 ? '' : 'tot-metric-value--bad');
 
   let maxAngErr = 0;
   for (let i = 0; i < cfg.numRot; i++) {
@@ -823,7 +875,7 @@ function buildVelBars() {
   const ld = document.createElement('div'); ld.className = 'tot-vel-row';
   ld.innerHTML = `<span class="tot-vel-name" style="color:var(--blue-700)">Linear ↕</span>
     <div class="tot-vel-track"><div class="tot-vel-fill" id="vbar-lin" style="background:var(--blue-700)"></div></div>
-    <span class="tot-vel-value" id="vval-lin">0.0 px/s</span>`;
+    <span class="tot-vel-value" id="vval-lin">0.00 m/s</span>`;
   c.appendChild(ld);
   for (let i = 0; i < cfg.numRot; i++) {
     const d = document.createElement('div'); d.className = 'tot-vel-row';
@@ -837,7 +889,7 @@ function buildVelBars() {
 function updateVelBars() {
   const lb = document.getElementById('vbar-lin'), lv = document.getElementById('vval-lin');
   if (lb) { lb.style.width = Math.min(Math.abs(lin.vel) / cfg.linFreeSpeed * 100, 100).toFixed(1) + '%'; }
-  if (lv) lv.textContent = lin.vel.toFixed(1) + ' px/s';
+  if (lv) lv.textContent = lin.vel.toFixed(2) + ' m/s';
   for (let i = 0; i < cfg.numRot; i++) {
     const b = document.getElementById(`vbar-${i}`), v = document.getElementById(`vval-${i}`);
     if (!b || !joints[i]) continue;
@@ -896,8 +948,8 @@ function buildJointControls() {
       </div>
       <div class="tot-control-row">
         <span class="tot-control-label">Link length</span>
-        <input type="range" class="tot-range" min="20" max="200" step="5" value="${cfg.rotLengths[i]}" id="rlen-${i}">
-        <span class="tot-control-value" id="rlen-val-${i}">${cfg.rotLengths[i]} px</span>
+        <input type="range" class="tot-range" min="0.1" max="1" step="0.05" value="${cfg.rotLengths[i]}" id="rlen-${i}">
+        <span class="tot-control-value" id="rlen-val-${i}">${cfg.rotLengths[i].toFixed(2)} m</span>
       </div>
       <div class="tot-control-row">
         <span class="tot-control-label">Segment mass</span>
@@ -912,7 +964,7 @@ function buildJointControls() {
     c.appendChild(d);
     document.getElementById(`rlen-${i}`).addEventListener('input', e => {
       cfg.rotLengths[i] = parseFloat(e.target.value);
-      document.getElementById(`rlen-val-${i}`).textContent = cfg.rotLengths[i] + ' px';
+      document.getElementById(`rlen-val-${i}`).textContent = cfg.rotLengths[i].toFixed(2) + ' m';
       draw();
     });
     document.getElementById(`rmass-${i}`).addEventListener('input', e => {
@@ -923,6 +975,7 @@ function buildJointControls() {
     document.getElementById(`rtgt-${i}`).addEventListener('input', e => {
       cfg.targetAngles[i] = parseFloat(e.target.value);
       document.getElementById(`rtgt-val-${i}`).textContent = cfg.targetAngles[i] + '°';
+      clickTarget = null; // manual edit replaces the last-clicked reticle
       draw(); updateMetrics();
     });
   }
@@ -941,7 +994,7 @@ function updateJointReadouts() {
 
 function syncTargetControlsUI() {
   const lt = document.getElementById('lin-target');
-  if (lt) { lt.value = cfg.targetExt; document.getElementById('lin-target-val').textContent = cfg.targetExt.toFixed(0) + ' px'; }
+  if (lt) { lt.value = cfg.targetExt; document.getElementById('lin-target-val').textContent = cfg.targetExt.toFixed(2) + ' m'; }
   for (let i = 0; i < cfg.numRot; i++) {
     const rt = document.getElementById(`rtgt-${i}`);
     if (rt) { rt.value = cfg.targetAngles[i]; document.getElementById(`rtgt-val-${i}`).textContent = cfg.targetAngles[i].toFixed(0) + '°'; }
@@ -955,49 +1008,48 @@ canvas.addEventListener('click', e => {
   const rect = canvas.getBoundingClientRect();
   const px = (e.clientX - rect.left) * (W / rect.width);
   const py = (e.clientY - rect.top) * (H / rect.height);
-  const tx = px - BASE_X, ty = -(py - BASE_Y);
-  const solved = solveTargetPose(tx, ty);
+  const world = fromCanvas({ x: px, y: py });
+  clickTarget = world;
+  const solved = solveTargetPose(world.x, world.y);
   cfg.targetExt = solved.ext;
   for (let i = 0; i < cfg.numRot; i++) cfg.targetAngles[i] = solved.angles[i];
   syncTargetControlsUI();
   document.getElementById('target-hint').textContent =
-    `Target solved: ext ${cfg.targetExt.toFixed(0)}px, angles ${cfg.targetAngles.slice(0, cfg.numRot).map(a => a.toFixed(0) + '°').join(', ')} — press Start`;
+    `Target solved: ext ${cfg.targetExt.toFixed(2)}m, angles ${cfg.targetAngles.slice(0, cfg.numRot).map(a => a.toFixed(0) + '°').join(', ')} — press Start`;
   draw(); updateMetrics();
 });
 
 document.getElementById('num-rot-joints').addEventListener('change', e => {
   cfg.numRot = parseInt(e.target.value);
+  clickTarget = null; // geometry changed — old click reference no longer applies
   stopSim(); initPhysics(); buildJointControls(); buildVelBars(); buildPowerBars(); draw(); updateMetrics();
 });
 
 document.getElementById('lin-max').addEventListener('input', e => {
   cfg.linMax = parseFloat(e.target.value);
-  document.getElementById('lin-max-val').textContent = cfg.linMax + ' px';
+  document.getElementById('lin-max-val').textContent = cfg.linMax.toFixed(2) + ' m';
   document.getElementById('lin-target').max = cfg.linMax;
   if (cfg.targetExt > cfg.linMax) { cfg.targetExt = cfg.linMax; syncTargetControlsUI(); }
   draw();
 });
 document.getElementById('lin-force').addEventListener('input', e => {
   cfg.linForce = parseFloat(e.target.value);
-  document.getElementById('lin-force-val').textContent = cfg.linForce;
+  document.getElementById('lin-force-val').textContent = cfg.linForce + ' N';
 });
 document.getElementById('lin-freespeed').addEventListener('input', e => {
   cfg.linFreeSpeed = parseFloat(e.target.value);
-  document.getElementById('lin-freespeed-val').textContent = cfg.linFreeSpeed + ' px/s';
-});
-document.getElementById('lin-mass').addEventListener('input', e => {
-  cfg.linMass = parseFloat(e.target.value);
-  document.getElementById('lin-mass-val').textContent = cfg.linMass.toFixed(1) + ' kg';
+  document.getElementById('lin-freespeed-val').textContent = cfg.linFreeSpeed.toFixed(2) + ' m/s';
 });
 document.getElementById('lin-target').addEventListener('input', e => {
   cfg.targetExt = parseFloat(e.target.value);
-  document.getElementById('lin-target-val').textContent = cfg.targetExt.toFixed(0) + ' px';
+  document.getElementById('lin-target-val').textContent = cfg.targetExt.toFixed(2) + ' m';
+  clickTarget = null; // manual edit replaces the last-clicked reticle
   draw(); updateMetrics();
 });
 
 document.getElementById('motor-torque').addEventListener('input', e => {
   cfg.motorTorque = parseFloat(e.target.value);
-  document.getElementById('motor-torque-val').textContent = cfg.motorTorque;
+  document.getElementById('motor-torque-val').textContent = cfg.motorTorque + ' N·m';
 });
 document.getElementById('max-speed').addEventListener('input', e => {
   cfg.maxSpeed = parseFloat(e.target.value);
@@ -1009,7 +1061,7 @@ document.getElementById('damping').addEventListener('input', e => {
 });
 document.getElementById('gravity').addEventListener('input', e => {
   cfg.gravity = parseFloat(e.target.value);
-  document.getElementById('gravity-val').textContent = cfg.gravity + ' px/s²';
+  document.getElementById('gravity-val').textContent = cfg.gravity.toFixed(2) + ' m/s²';
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -1055,7 +1107,7 @@ function clearOutput() { outputPanel.innerHTML = ''; }
 // ─────────────────────────────────────────────────────────────
 const defaultCode = `// Arm Feedforward Controller
 // Robot: vertical linear actuator (prismatic J0) + rotational chain,
-// now loaded with real per-segment weight and gravity.
+// loaded with real per-segment weight and gravity.
 //
 // step(dt) is called every frame (~60fps). Instead of commanding a
 // target position, you output raw motor power, -1..1, for each
@@ -1069,11 +1121,16 @@ const defaultCode = `// Arm Feedforward Controller
 // ROTATIONAL JOINT API (i = 0..numRotJoints-1):
 //   setPower(i, power)        — motor output, -1..1
 //   getAngle(i)/getVelocity(i)
-//   getGravityTorque(i)       — live gravity torque on joint i, from
-//                                the actual mass/length/angle of
-//                                every link beyond it. Positive means
-//                                gravity is trying to INCREASE the
-//                                angle.
+//
+// There's no getGravityTorque() handed to you — computing that IS
+// the exercise. gravityTorqueAt(...) below is a worked, fully
+// editable example: for joint i, it sums every link at or beyond i,
+// weighting each one by its horizontal distance from joint i's pivot
+// (gravity pulls straight down, so only the SIDEWAYS offset produces
+// a torque around a vertical-ish pivot). Read it, change it, replace
+// it with your own approach — it's just Java sitting above step(dt),
+// the same way a field or helper method would sit above a real
+// periodic() method.
 //
 // STATE:
 //   extension, extVelocity, angles[], velocities[]
@@ -1087,6 +1144,20 @@ const defaultCode = `// Arm Feedforward Controller
 //
 // Call stopSim() once every error is small.
 
+double gravityTorqueAt(int i, double[] angles, double[] lengths, double[] masses, int n, double g) {
+  double cumAngleRad = 0;
+  for (int k = 0; k < i; k++) cumAngleRad += angles[k] * Math.PI / 180.0;
+  double horizOffset = 0;   // running horizontal distance from joint i's pivot
+  double torque = 0;
+  for (int j = i; j < n; j++) {
+    cumAngleRad += angles[j] * Math.PI / 180.0;
+    double comOffset = horizOffset + (lengths[j] / 2.0) * Math.sin(cumAngleRad);
+    torque += masses[j] * g * comOffset;
+    horizOffset += lengths[j] * Math.sin(cumAngleRad);
+  }
+  return torque;   // positive means gravity is trying to INCREASE the angle
+}
+
 println("Arm feedforward initialized.");
 println("Rot joints: " + numRotJoints + "  Gravity: " + gravity);
 
@@ -1099,18 +1170,19 @@ void step(double dt) {
   // the proportional term on top just corrects any remaining error.
   double weightAbove = linMass;
   for (int k = 0; k < numRotJoints; k++) weightAbove += masses[k];
-  double ffLin = (gravity * weightAbove) / 1800.0;   // ≈ this rig's stall force
-  double kPLin = 0.02;
-  if (Math.abs(extError) > 1.5) allGood = false;
+  double ffLin = (gravity * weightAbove) / 80.0;   // ≈ this rig's stall force, 80N
+  double kPLin = 2.0;
+  if (Math.abs(extError) > 0.01) allGood = false;
   setLinearPower(ffLin + kPLin * extError);
 
   // ── Rotational joints: cancel gravity, then close the angle error ─
-  // getGravityTorque(i) already accounts for every distal link's
+  // gravityTorqueAt(i, ...) already accounts for every distal link's
   // mass, length, and current angle — dividing by the motor's stall
   // torque (and negating) turns it into the power needed to hold
   // position right here.
   for (int i = 0; i < numRotJoints; i++) {
-    double ff = -getGravityTorque(i) / 150000.0;
+    double torque = gravityTorqueAt(i, angles, lengths, masses, numRotJoints, gravity);
+    double ff = -torque / 30.0;   // ≈ this rig's stall torque, 30 N·m
     double kP = 0.012;
     if (Math.abs(angleErrors[i]) > 2.0) allGood = false;
     setPower(i, ff + kP * angleErrors[i]);
