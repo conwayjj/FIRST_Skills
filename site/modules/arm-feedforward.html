@@ -173,7 +173,7 @@
               <div class="tot-console__line--info">// You command raw motor power, -1..1 — not a position.</div>
               <div class="tot-console__line--info">// Prismatic: setLinearPower(power)</div>
               <div class="tot-console__line--info">// Rotational: setPower(i, power)  — i = 0..numRotJoints-1</div>
-              <div class="tot-console__line--info">// Gravity feedforward: getGravityTorque(i)</div>
+              <div class="tot-console__line--info">// Gravity feedforward is yours to write — see gravityTorqueAt(...) above step(dt)</div>
               <div class="tot-console__line--info">// Targets: targetExtension, targetAngles[], extError, angleErrors[]</div>
               <div class="tot-console__line--info">// Call stopSim() when converged.</div>
             </div>
@@ -212,8 +212,12 @@
           target the same way it did in <a href="pidf-control.html">PIDF Control</a> —
           gravity here is worse, because it changes with pose instead of staying
           constant, so the feedforward term has to be recomputed every frame from
-          the arm's actual mass, link length, and current angle. <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">getGravityTorque(i)</code>
-          gives you exactly that number, live.
+          the arm's actual mass, link length, and current angle. There's no
+          <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">getGravityTorque()</code>
+          handed to you for that — working it out is the point. The default code
+          includes <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">gravityTorqueAt(...)</code>,
+          a worked example sitting right above <code style="font-family:var(--font-mono);background:var(--brand-soft);color:var(--brand-strong);padding:1px 5px;border-radius:4px;">step(dt)</code>
+          as ordinary, fully editable code — read it, change it, or replace it.
         </p>
       </div>
 
@@ -227,8 +231,8 @@
           <dt>getExtension() / getExtVelocity()</dt><dd>Current extension (m) and velocity (m/s).</dd>
           <dt>setPower(i, power)</dt><dd>Rotational joint i motor output, -1..1.</dd>
           <dt>getAngle(i) / getVelocity(i)</dt><dd>Current angle (°) and angular velocity (°/s) of joint i.</dd>
-          <dt>getGravityTorque(i)</dt><dd>Live gravity torque on joint i (N·m) from every link beyond it — positive means gravity is trying to increase the angle. Divide by the motor's stall torque (negated) for a holding feedforward term.</dd>
           <dt>getMass(i) / getLinearMass()</dt><dd>Segment mass (kg) / fixed carriage mass (kg).</dd>
+          <dt>gravityTorqueAt(...)</dt><dd>Not provided by the engine — this is the exercise. The default code has a worked, editable example above step(dt); write your own or modify it.</dd>
           <dt>stopSim()</dt><dd>Call once every error is small.</dd>
           <dt>println(...)</dt><dd>Write a line to the console panel below the editor.</dd>
           <dt>endX, endY</dt><dd>Current end-effector position (m).</dd>
@@ -570,18 +574,40 @@ function getAngle(i) { return (i >= 0 && i < cfg.numRot) ? joints[i].angle : 0; 
 function getVelocity(i) { return (i >= 0 && i < cfg.numRot) ? joints[i].vel : 0; }
 function getMass(i) { return (i >= 0 && i < cfg.numRot) ? cfg.masses[i] : 0; }
 function getLinearMass() { return cfg.linMass; }
-function getGravityTorque(i) { return gravityTorque(i); }
+// No getGravityTorque() here — that calculation is the exercise, not
+// a library call. gravityTorqueAt(...) in the default starter code is
+// a worked, editable example of it; the physics engine's own internal
+// gravityTorque(k) (above, used to actually simulate the arm) is not
+// exposed to student code at all.
 
 // ─────────────────────────────────────────────────────────────
 //  CODE COMPILATION
 //  A lightweight Java-flavored-JS subset: swaps a few Java keywords
-//  and Math.* spellings so the student's step(dt) can run directly
-//  as JS. This is a stand-in until the site has a real Java runtime
-//  (see /site/README.md — "Executing student code").
+//  and Math.* spellings, and rewrites Java-style function headers
+//  (return-type + typed params) into plain JS `function name(...)`,
+//  so the student's step(dt) — and any helper functions/fields they
+//  declare above it — can run directly as JS. This is a stand-in
+//  until the site has a real Java runtime (see /site/README.md —
+//  "Executing student code").
 // ─────────────────────────────────────────────────────────────
 const runBtn = document.getElementById('run-btn');
 
-const javaToJS = src => src
+// Converts "double foo(int a, double[] b) {" into "function foo(a, b) {" —
+// keeps helper-function declarations usable without a real type system.
+function convertFunctionDecls(src) {
+  return src.replace(/\b(?:void|double|int|float|long|boolean)\s+(\w+)\s*\(([^)]*)\)\s*\{/g,
+    (m, name, params) => {
+      const names = params.split(',').map(p => {
+        const t = p.trim();
+        if (!t) return '';
+        const parts = t.split(/\s+/);
+        return parts[parts.length - 1];
+      }).filter(Boolean).join(', ');
+      return `function ${name}(${names}) {`;
+    });
+}
+
+const javaToJS = src => convertFunctionDecls(src)
   .replace(/\bdouble\b/g, 'let').replace(/\bint\b/g, 'let').replace(/\bfloat\b/g, 'let')
   .replace(/\bboolean\b/g, 'let').replace(/\blong\b/g, 'let').replace(/\bString\b/g, 'let')
   .replace(/\bMath\.(atan2|acos|asin|sqrt|cos|sin|tan|pow|abs|min|max|PI|floor|ceil|round|signum)\b/g,
@@ -589,64 +615,65 @@ const javaToJS = src => src
   .replace(/\bSystem\.out\.println\b/g, '__println').replace(/\bprintln\b/g, '__println')
   .replace(/\bstopSim\b/g, '__stopSim');
 
+// step(dt) itself keeps a site-defined parameter list (extension, angles[],
+// etc. are ambient values, not something the student's own "void step(double
+// dt)" signature declares) — so its body is located by brace-matching and
+// spliced into a function whose signature we control, while everything
+// above it (fields, helper functions like gravityTorqueAt) is transpiled
+// as-is and executed once, exactly like a real class body would be.
+function splitPreambleAndStep(src) {
+  const headerMatch = src.match(/void\s+step\s*\(\s*(?:double\s+)?dt\s*\)\s*\{/);
+  if (!headerMatch) return null;
+  const startIdx = headerMatch.index + headerMatch[0].length;
+  let depth = 1, i = startIdx;
+  for (; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    else if (src[i] === '}') { depth--; if (depth === 0) break; }
+  }
+  if (depth !== 0) throw new Error('Mismatched braces — check that every { has a matching }.');
+  return { preamble: src.slice(0, headerMatch.index), stepBody: src.slice(startIdx, i) };
+}
+
 function compileAndRun() {
   clearOutput();
   const src = editor.value;
-  const stepMatch = src.match(/void\s+step\s*\(\s*(?:double\s+)?dt\s*\)\s*\{([\s\S]*)\}/);
-  if (!stepMatch) {
+  const split = splitPreambleAndStep(src);
+  if (!split) {
     addOutput('Error: cannot find  void step(double dt) { ... }', 'error');
     return;
   }
-  const initSrc = src.slice(0, stepMatch.index);
-  const stepSrc = stepMatch[1];
-
-  const initLogs = [];
-  try {
-    const initFn = new Function(
-      'numRotJoints', 'lengths', 'masses', 'maxExtension', 'linMass', 'gravity', '__println',
-      '"use strict";\n' + javaToJS(initSrc)
-    );
-    initFn(cfg.numRot, cfg.rotLengths.slice(0, cfg.numRot), cfg.masses.slice(0, cfg.numRot),
-      cfg.linMax, cfg.linMass, cfg.gravity,
-      (...a) => initLogs.push({ t: a.join(' '), c: 'line' }));
-    initLogs.forEach(l => addOutput(l.t, l.c));
-  } catch (e) { addOutput('Init error: ' + e.message, 'error'); return; }
 
   let printCount = 0, printWarned = false;
   const MAX_PRINTS = 20;
+  const print = (...a) => {
+    if (++printCount <= MAX_PRINTS) addOutput(a.join(' '), 'line');
+    else if (!printWarned) { printWarned = true; addOutput('(println limited in step())', 'warn'); }
+  };
+  const stop = () => {
+    converged = true;
+    stopSim(true);
+    addOutput(`✓ Converged in ${frameCount} frames.`, 'ok');
+  };
+
   try {
-    const rawStep = new Function(
-      'dt',
-      'extension', 'extVelocity',
-      'angles', 'velocities',
-      'endX', 'endY',
-      'targetExtension', 'targetAngles',
-      'extError', 'angleErrors',
+    const factory = new Function(
       'setLinearPower', 'setPower',
       'getExtension', 'getExtVelocity', 'getAngle', 'getVelocity',
-      'getMass', 'getLinearMass', 'getGravityTorque',
+      'getMass', 'getLinearMass',
       'numRotJoints', 'lengths', 'masses', 'maxExtension', 'linMass', 'gravity',
       '__println', '__stopSim',
-      '"use strict";\n' + javaToJS(stepSrc)
+      '"use strict";\n' + javaToJS(split.preamble) +
+      '\nreturn function(dt, extension, extVelocity, angles, velocities, endX, endY, targetExtension, targetAngles, extError, angleErrors) {\n' +
+      javaToJS(split.stepBody) + '\n};'
     );
-    stepFn = (dt, extPos, extVel, angs, vels, ex, ey, tExt, tAngs, extErr, angErrs) => {
-      const print = (...a) => {
-        if (++printCount <= MAX_PRINTS) addOutput(a.join(' '), 'line');
-        else if (!printWarned) { printWarned = true; addOutput('(println limited in step())', 'warn'); }
-      };
-      const stop = () => {
-        converged = true;
-        stopSim(true);
-        addOutput(`✓ Converged in ${frameCount} frames.`, 'ok');
-      };
-      rawStep(dt, extPos, extVel, angs, vels, ex, ey, tExt, tAngs, extErr, angErrs,
-        setLinearPower, setPower,
-        getExtension, getExtVelocity, getAngle, getVelocity,
-        getMass, getLinearMass, getGravityTorque,
-        cfg.numRot, cfg.rotLengths.slice(0, cfg.numRot), cfg.masses.slice(0, cfg.numRot),
-        cfg.linMax, cfg.linMass, cfg.gravity,
-        print, stop);
-    };
+    stepFn = factory(
+      setLinearPower, setPower,
+      getExtension, getExtVelocity, getAngle, getVelocity,
+      getMass, getLinearMass,
+      cfg.numRot, cfg.rotLengths.slice(0, cfg.numRot), cfg.masses.slice(0, cfg.numRot),
+      cfg.linMax, cfg.linMass, cfg.gravity,
+      print, stop
+    );
     addOutput('// step() compiled OK.', 'info');
     startSim();
   } catch (e) { addOutput('Compile error: ' + e.message, 'error'); stepFn = null; }
@@ -1080,7 +1107,7 @@ function clearOutput() { outputPanel.innerHTML = ''; }
 // ─────────────────────────────────────────────────────────────
 const defaultCode = `// Arm Feedforward Controller
 // Robot: vertical linear actuator (prismatic J0) + rotational chain,
-// now loaded with real per-segment weight and gravity.
+// loaded with real per-segment weight and gravity.
 //
 // step(dt) is called every frame (~60fps). Instead of commanding a
 // target position, you output raw motor power, -1..1, for each
@@ -1094,11 +1121,16 @@ const defaultCode = `// Arm Feedforward Controller
 // ROTATIONAL JOINT API (i = 0..numRotJoints-1):
 //   setPower(i, power)        — motor output, -1..1
 //   getAngle(i)/getVelocity(i)
-//   getGravityTorque(i)       — live gravity torque on joint i, from
-//                                the actual mass/length/angle of
-//                                every link beyond it. Positive means
-//                                gravity is trying to INCREASE the
-//                                angle.
+//
+// There's no getGravityTorque() handed to you — computing that IS
+// the exercise. gravityTorqueAt(...) below is a worked, fully
+// editable example: for joint i, it sums every link at or beyond i,
+// weighting each one by its horizontal distance from joint i's pivot
+// (gravity pulls straight down, so only the SIDEWAYS offset produces
+// a torque around a vertical-ish pivot). Read it, change it, replace
+// it with your own approach — it's just Java sitting above step(dt),
+// the same way a field or helper method would sit above a real
+// periodic() method.
 //
 // STATE:
 //   extension, extVelocity, angles[], velocities[]
@@ -1111,6 +1143,20 @@ const defaultCode = `// Arm Feedforward Controller
 //   masses[], linMass, gravity       — the plant you're fighting
 //
 // Call stopSim() once every error is small.
+
+double gravityTorqueAt(int i, double[] angles, double[] lengths, double[] masses, int n, double g) {
+  double cumAngleRad = 0;
+  for (int k = 0; k < i; k++) cumAngleRad += angles[k] * Math.PI / 180.0;
+  double horizOffset = 0;   // running horizontal distance from joint i's pivot
+  double torque = 0;
+  for (int j = i; j < n; j++) {
+    cumAngleRad += angles[j] * Math.PI / 180.0;
+    double comOffset = horizOffset + (lengths[j] / 2.0) * Math.sin(cumAngleRad);
+    torque += masses[j] * g * comOffset;
+    horizOffset += lengths[j] * Math.sin(cumAngleRad);
+  }
+  return torque;   // positive means gravity is trying to INCREASE the angle
+}
 
 println("Arm feedforward initialized.");
 println("Rot joints: " + numRotJoints + "  Gravity: " + gravity);
@@ -1130,12 +1176,13 @@ void step(double dt) {
   setLinearPower(ffLin + kPLin * extError);
 
   // ── Rotational joints: cancel gravity, then close the angle error ─
-  // getGravityTorque(i) already accounts for every distal link's
+  // gravityTorqueAt(i, ...) already accounts for every distal link's
   // mass, length, and current angle — dividing by the motor's stall
   // torque (and negating) turns it into the power needed to hold
   // position right here.
   for (int i = 0; i < numRotJoints; i++) {
-    double ff = -getGravityTorque(i) / 30.0;   // ≈ this rig's stall torque, 30 N·m
+    double torque = gravityTorqueAt(i, angles, lengths, masses, numRotJoints, gravity);
+    double ff = -torque / 30.0;   // ≈ this rig's stall torque, 30 N·m
     double kP = 0.012;
     if (Math.abs(angleErrors[i]) > 2.0) allGood = false;
     setPower(i, ff + kP * angleErrors[i]);
