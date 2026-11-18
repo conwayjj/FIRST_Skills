@@ -1,0 +1,2442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>try{if(localStorage.getItem('tot-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}</script>
+<title>Prism LED Driver — That ONE Team Training Hub</title>
+<meta name="description" content="Program a simulated goBILDA Prism RGB LED Driver with the real GoBildaPrismDriver / PrismAnimations Java API — four strips (12 + 6 + 12 + 6 LEDs) wired clockwise in a rectangle, a virtual gamepad, telemetry, layers, and artboards.">
+<link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/module.css">
+<style>
+  #prism-canvas { width: 100%; height: auto; background: #0b0f17; border-radius: 0; cursor: crosshair; }
+  .prism-canvas-wrap { background: #0b0f17; padding: 0; }
+
+  .prism-ds { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .prism-ds .tot-btn { min-width: 84px; }
+  .prism-status {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border-strong);
+    color: var(--text-muted); background: var(--surface);
+  }
+  .prism-status--init { color: #a86b00; border-color: #e0b04c; background: #fff6df; }
+  .prism-status--running { color: var(--success); border-color: var(--success); background: #e9f7ef; }
+  .prism-status--error { color: var(--danger); border-color: var(--danger); background: #fdecec; }
+  [data-theme="dark"] .prism-status--init { background: #3a2e10; color: #f0c060; }
+  [data-theme="dark"] .prism-status--running { background: #12301f; color: #6fd39a; }
+  [data-theme="dark"] .prism-status--error { background: #3a1616; color: #f28b8b; }
+
+  .prism-telemetry {
+    background: var(--grey-900); color: #d7dde6; font-family: var(--font-mono);
+    font-size: 12px; line-height: 1.55; border-radius: var(--radius-sm);
+    padding: 10px 12px; min-height: 76px; white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .prism-telemetry__empty { color: var(--grey-500); }
+
+  .prism-pad { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; }
+  .prism-pad__cluster { display: grid; grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 34px); gap: 3px; }
+  .prism-pad__btn {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    border: 2px solid var(--border-strong); background: var(--surface); color: var(--text-strong);
+    border-radius: 8px; cursor: pointer; user-select: none; touch-action: none; padding: 0;
+  }
+  .prism-pad__btn--round { border-radius: 50%; }
+  .prism-pad__btn.is-down { transform: translateY(1px); filter: brightness(0.85); box-shadow: inset 0 0 0 2px rgba(0,0,0,0.25); }
+  .prism-pad__btn[data-btn="y"] { background: #f4c430; color: #222; border-color: #c99b12; }
+  .prism-pad__btn[data-btn="x"] { background: #2f7de1; color: #fff; border-color: #1d5fb3; }
+  .prism-pad__btn[data-btn="b"] { background: #d64545; color: #fff; border-color: #a62e2e; }
+  .prism-pad__btn[data-btn="a"] { background: #2f9e5b; color: #fff; border-color: #217544; }
+  .prism-pad__mid { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .prism-pad__bumpers { display: flex; gap: 6px; }
+  .prism-pad__bumpers .prism-pad__btn { flex: 1; height: 30px; }
+  .prism-pad__trigger { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
+  .prism-pad__trigger input { flex: 1; min-width: 0; }
+
+  .prism-layers { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+  .prism-layer {
+    display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 11px;
+    padding: 4px 6px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-alt);
+    color: var(--text-muted); min-width: 0;
+  }
+  .prism-layer b { color: var(--text-strong); }
+  .prism-layer__sw { width: 10px; height: 10px; border-radius: 2px; flex: none; border: 1px solid rgba(0,0,0,0.2); }
+  .prism-layer__txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .prism-layer.is-empty { opacity: 0.55; }
+
+  .prism-artboards { display: flex; gap: 6px; flex-wrap: wrap; }
+  .prism-artboard {
+    font-family: var(--font-mono); font-size: 11px; padding: 4px 8px; border-radius: var(--radius-sm);
+    border: 1px dashed var(--border-strong); color: var(--text-muted);
+  }
+  .prism-artboard.is-saved { border-style: solid; border-color: var(--tot-blue); color: var(--brand-strong); background: var(--brand-soft); }
+  .prism-artboard.is-boot { box-shadow: 0 0 0 2px #f0c060; }
+
+  .prism-device-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .prism-device-row input[type="text"] {
+    font-family: var(--font-mono); font-size: 12px; width: 110px; padding: 5px 8px;
+    border: 2px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-strong);
+  }
+
+  .prism-table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 14px; }
+  .prism-table th, .prism-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .prism-table th { font-family: var(--font-heading); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .prism-table td code, .prism-card code {
+    font-family: var(--font-mono); background: var(--brand-soft); color: var(--brand-strong); padding: 1px 5px; border-radius: 4px; font-size: 0.92em;
+  }
+  .prism-table-wrap { overflow-x: auto; }
+  .prism-card p, .prism-card li { color: var(--text-muted); font-size: 15px; line-height: 1.6; }
+  .prism-card ol, .prism-card ul { margin: 12px 0 0; padding-left: 22px; }
+  .prism-card li { margin-bottom: 6px; }
+  .prism-card h3 { font-size: 0.95rem; margin: 20px 0 6px; }
+  .prism-snippet {
+    background: var(--grey-900); color: #d7dde6; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6;
+    border-radius: var(--radius-sm); padding: 12px 14px; overflow-x: auto; white-space: pre; margin: 10px 0 0;
+  }
+  .prism-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .prism-grid-2 > .tot-card { margin: 0; }
+  @media (max-width: 900px) {
+    .prism-grid-2 { grid-template-columns: 1fr; }
+    .prism-layers { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .prism-pad { grid-template-columns: 1fr 1fr; }
+    .prism-pad__mid { grid-column: 1 / -1; order: 3; }
+  }
+</style>
+</head>
+<body>
+
+<header class="tot-header">
+  <div class="tot-header__utility">
+    <div class="tot-header__utility-inner">
+      <span>That ONE Team — Team 4967</span>
+      <div class="tot-header__utility-right">
+        <a class="tot-header__utility-email" href="mailto:info@thatoneteam.org">info@thatoneteam.org</a>
+      </div>
+    </div>
+  </div>
+  <div class="tot-header__bar">
+    <div class="tot-header__bar-inner">
+      <a class="tot-header__logo" href="../../index.html">
+        <img class="tot-header__logo-img" src="../assets/img/logo-square.png" alt="That ONE Team">
+        <span class="tot-header__logo-text">Training Hub</span>
+      </a>
+      <nav class="tot-nav">
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html">Home</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../../index.html#modules">Modules</a></div>
+        <div class="tot-nav__item"><a class="tot-nav__link" href="../README.md">Build Guide</a></div>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="tot-section tot-section--tight tot-section--surface">
+    <div class="tot-container">
+
+      <div class="tot-breadcrumb">
+        <a href="../../index.html">Home</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <a href="../../index.html#modules">Modules</a>
+        <span class="tot-breadcrumb__sep">/</span>
+        <span class="tot-breadcrumb__current">Prism LED Driver</span>
+      </div>
+
+      <div class="tot-module-header">
+        <div class="tot-module-header__badges">
+          <span class="tot-badge tot-badge--soft">Hardware</span>
+          <span class="tot-badge tot-badge--brand">Interactive Simulation</span>
+        </div>
+        <h1 class="tot-module-header__title">Prism LED Driver</h1>
+        <p class="tot-module-header__lead">
+          Write a real FTC OpMode against the goBILDA® Prism RGB LED Driver's Java API and
+          watch it light up our robot's LED rectangle: two 12-LED strips on the top and
+          bottom, two 6-LED strips on the sides, 36 LEDs on one chain. Pick an example, press
+          <strong>INIT</strong> then <strong>START</strong>, and drive the gamepad.
+        </p>
+      </div>
+
+      <div class="tot-workbench">
+
+        <!-- SIMULATOR PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title">Prism + LED Rectangle</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--soft" id="hdr-leds">36 LEDs</span>
+            </div>
+          </div>
+          <div class="tot-panel__body">
+            <div class="tot-sim-canvas-wrap prism-canvas-wrap">
+              <canvas id="prism-canvas" width="720" height="430" aria-label="Simulated LED rectangle driven by a Prism LED driver"></canvas>
+            </div>
+            <p class="tot-hint-text" id="led-hint">Hover over an LED to see its index.</p>
+
+            <div class="tot-metrics-row">
+              <div class="tot-metric-card"><div class="tot-metric-label">OpMode</div><div class="tot-metric-value" id="m-state">Stopped</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Strip Length</div><div class="tot-metric-value" id="m-len">36</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">Layers Used</div><div class="tot-metric-value" id="m-layers">0 / 10</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">I²C / sec</div><div class="tot-metric-value" id="m-i2c">0</div></div>
+              <div class="tot-metric-card"><div class="tot-metric-label">I²C Total</div><div class="tot-metric-value" id="m-i2c-total">0</div></div>
+            </div>
+
+            <div class="tot-control-group" style="max-height:none;">
+              <div class="tot-control-heading">Driver Station Telemetry</div>
+              <div class="prism-telemetry" id="ds-telemetry"><span class="prism-telemetry__empty">No telemetry yet.</span></div>
+
+              <div class="tot-control-heading">Gamepad 1</div>
+              <div class="prism-pad" id="gamepad">
+                <div class="prism-pad__cluster" aria-label="D-pad">
+                  <span></span><button class="prism-pad__btn" data-btn="dpad_up" type="button" aria-label="D-pad up">▲</button><span></span>
+                  <button class="prism-pad__btn" data-btn="dpad_left" type="button" aria-label="D-pad left">◀</button><span></span><button class="prism-pad__btn" data-btn="dpad_right" type="button" aria-label="D-pad right">▶</button>
+                  <span></span><button class="prism-pad__btn" data-btn="dpad_down" type="button" aria-label="D-pad down">▼</button><span></span>
+                </div>
+                <div class="prism-pad__mid">
+                  <div class="prism-pad__bumpers">
+                    <button class="prism-pad__btn" data-btn="left_bumper" type="button">LB</button>
+                    <button class="prism-pad__btn" data-btn="right_bumper" type="button">RB</button>
+                  </div>
+                  <label class="prism-pad__trigger">LT <input type="range" class="tot-range" id="lt-slider" min="0" max="1" step="0.01" value="0"><span id="lt-val">0.00</span></label>
+                  <label class="prism-pad__trigger">RT <input type="range" class="tot-range" id="rt-slider" min="0" max="1" step="0.01" value="0"><span id="rt-val">0.00</span></label>
+                </div>
+                <div class="prism-pad__cluster" aria-label="Face buttons">
+                  <span></span><button class="prism-pad__btn prism-pad__btn--round" data-btn="y" type="button">Y</button><span></span>
+                  <button class="prism-pad__btn prism-pad__btn--round" data-btn="x" type="button">X</button><span></span><button class="prism-pad__btn prism-pad__btn--round" data-btn="b" type="button">B</button>
+                  <span></span><button class="prism-pad__btn prism-pad__btn--round" data-btn="a" type="button">A</button><span></span>
+                </div>
+              </div>
+              <p class="tot-hint-text" style="padding-left:0;">Hold a button with the mouse or touch, or use the keyboard (outside the editor): A / B / X / Y keys, arrow keys for the D-pad, Q / E for the bumpers.</p>
+
+              <div class="tot-control-heading">Prism Layers (what the driver is running)</div>
+              <div class="prism-layers" id="layer-list"></div>
+
+              <div class="tot-control-heading">Artboards (saved on the Prism)</div>
+              <div class="prism-artboards" id="artboard-list"></div>
+
+              <div class="tot-control-heading">Device</div>
+              <div class="prism-device-row">
+                <label>Config name <input type="text" id="config-name" value="prism" spellcheck="false"></label>
+                <button class="tot-btn tot-btn--sm tot-btn--secondary" id="power-btn" type="button">Power-cycle Prism</button>
+                <span class="tot-checkbox-row" style="margin:0;"><input type="checkbox" id="show-index" checked><label for="show-index">show LED indexes</label></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CODE PANEL -->
+        <div class="tot-panel">
+          <div class="tot-panel__header">
+            <span class="tot-panel__title" id="file-title">LedOpMode.java</span>
+            <div class="tot-panel__actions">
+              <span class="tot-badge tot-badge--outline tot-badge--outline-on-dark">GoBildaPrismDriver</span>
+            </div>
+          </div>
+          <div class="tot-code-toolbar" id="example-toolbar">
+            <span style="font-size:12px;color:var(--text-muted);margin-right:4px;">Examples:</span>
+          </div>
+          <div class="tot-panel__body">
+            <textarea class="tot-code-editor" id="code-editor" spellcheck="false" wrap="off" style="min-height:420px;white-space:pre;overflow:auto;"></textarea>
+            <div class="tot-code-toolbar" id="run-toolbar" style="border-top:1px solid var(--border);border-bottom:none;">
+              <div class="prism-ds">
+                <button class="tot-btn tot-btn--sm tot-btn--secondary" id="init-btn" type="button">INIT</button>
+                <button class="tot-btn tot-btn--sm tot-btn--primary" id="start-btn" type="button" disabled>▶ START</button>
+                <button class="tot-btn tot-btn--sm tot-btn--ghost" id="stop-btn" type="button" style="border:2px solid var(--border-strong);" disabled>■ STOP</button>
+                <span class="prism-status" id="ds-status">Stopped</span>
+              </div>
+            </div>
+            <div class="tot-console" id="console-output" style="max-height:180px;">
+              <div class="tot-console__line--info">// INIT compiles your OpMode and runs it up to waitForStart().</div>
+              <div class="tot-console__line--info">// START runs the rest. STOP ends it — but like the real Prism,</div>
+              <div class="tot-console__line--info">// the LEDs keep showing their last animations until you change them.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tot-card tot-card--pad-lg prism-card" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Overview</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">You program animations, not pixels</h2>
+        </div>
+        <p style="margin:14px 0 0;">
+          The Prism is a small LED computer that sits between the Control Hub and the LED strips.
+          Your OpMode never sets LED colors one at a time. Instead, you send it
+          <strong>animations</strong> (Solid, Blink, Pulse, Rainbow, Snakes, and eight more) over
+          I²C, each one covering a range of LED indexes. The Prism then runs those animations by
+          itself, so the lights keep moving even while your code is busy, and even after the
+          OpMode stops.
+        </p>
+        <p style="margin:10px 0 0;">
+          The simulator above uses the same class names, method names, defaults, and limits as
+          goBILDA's Java driver (<code>GoBildaPrismDriver</code>, <code>PrismAnimations</code>,
+          <code>Color</code>, <code>Direction</code>), so code that works here can be copied onto
+          the robot.
+        </p>
+      </div>
+
+      <div class="prism-grid-2">
+        <div class="tot-card tot-card--pad-lg prism-card">
+          <div class="tot-section-heading">
+            <div class="tot-section-heading__eyebrow">Our Hardware</div>
+            <h2 class="tot-section-heading__title" style="font-size:1.25rem;">LED index map</h2>
+          </div>
+          <p style="margin:14px 0 0;">
+            Four strips are daisy-chained clockwise starting at the top strip, so the Prism sees
+            one 36-LED strip. Index 0 is the first LED of the top strip (the end the Prism plugs into).
+          </p>
+          <div class="prism-table-wrap">
+            <table class="prism-table">
+              <thead><tr><th>Strip</th><th>LEDs</th><th>Indexes</th><th>Runs (facing the LEDs)</th></tr></thead>
+              <tbody>
+                <tr><td>Top</td><td>12</td><td><code>0 – 11</code></td><td>left → right</td></tr>
+                <tr><td>Right</td><td>6</td><td><code>12 – 17</code></td><td>top → bottom</td></tr>
+                <tr><td>Bottom</td><td>12</td><td><code>18 – 29</code></td><td>right → left</td></tr>
+                <tr><td>Left</td><td>6</td><td><code>30 – 35</code></td><td>bottom → top</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin:12px 0 0;">
+            Ranges are <strong>inclusive</strong>: <code>setStartIndex(12)</code> +
+            <code>setStopIndex(17)</code> lights all 6 LEDs on the right strip. Because the bottom
+            and left strips run "backwards" on the robot, <code>Direction.Forward</code> always means
+            "clockwise" around the rectangle.
+          </p>
+        </div>
+
+        <div class="tot-card tot-card--pad-lg prism-card">
+          <div class="tot-section-heading">
+            <div class="tot-section-heading__eyebrow">Key Ideas</div>
+            <h2 class="tot-section-heading__title" style="font-size:1.25rem;">How the Prism thinks</h2>
+          </div>
+          <ul>
+            <li><strong>Layers.</strong> The Prism has 10 layers, <code>LAYER_0</code> to <code>LAYER_9</code>, each holding one animation. Higher layers draw on top of lower ones.</li>
+            <li><strong>Black is see-through.</strong> <code>Color.TRANSPARENT</code> is (0, 0, 0). Wherever a layer is black, or outside its index range, you see the layer below.</li>
+            <li><strong>Insert vs. update.</strong> <code>insertAnimation</code> only stores the animation in your driver object. Nothing reaches the LEDs until you call <code>insertAndUpdateAnimation</code>, <code>updateAnimationFromIndex</code>, or <code>updateAllAnimations</code>.</li>
+            <li><strong>Change an animation in place.</strong> Keep a reference, call its setters (<code>setPrimaryColor</code>, <code>setStopIndex</code>, ...), then <code>updateAnimationFromIndex(layer)</code>.</li>
+            <li><strong>Every update is an I²C write.</strong> Only update when something changes, not every loop. Watch the I²C / sec meter.</li>
+            <li><strong>Artboards</strong> save all 10 layers into the Prism's memory (8 slots). One can be the boot animation shown at power-on.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg prism-card" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Quick Start</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">The five lines you always need</h2>
+        </div>
+<pre class="prism-snippet">GoBildaPrismDriver prism = hardwareMap.get(GoBildaPrismDriver.class, "prism");
+prism.setStripLength(36);           // 12 + 6 + 12 + 6
+prism.clearAllAnimations();         // layers survive between OpModes — start clean
+
+PrismAnimations.Solid top = new PrismAnimations.Solid(Color.BLUE, 0, 11);   // color, start, stop
+prism.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, top);</pre>
+        <h3>Try this in order</h3>
+        <ol>
+          <li><strong>Solid Color</strong>: change the color and brightness. Make your own color with <code>new Color(255, 80, 0)</code>.</li>
+          <li><strong>Four Strips</strong>: give each strip its own color using index ranges. Then make just the corners white on a higher layer.</li>
+          <li><strong>Layers</strong>: a Rainbow on the bottom, Sparkle above it, and a DroidScan only on the top strip. Hold A to hide the scanner.</li>
+          <li><strong>Gamepad States</strong>: a state machine that only talks to the Prism when the robot's state changes.</li>
+          <li><strong>Trigger Bar</strong>: the right trigger fills the top strip like a gauge, updating one animation in place.</li>
+          <li><strong>Match Timer</strong>: colors that change as the end of the match gets closer, using <code>ElapsedTime</code>.</li>
+          <li><strong>Artboards</strong>: save looks into the Prism, switch between them with X / Y, then press <em>Power-cycle Prism</em> to see the boot artboard.</li>
+          <li><strong>Iterative OpMode</strong>: the same ideas written with <code>init()</code> / <code>loop()</code> instead of <code>runOpMode()</code>.</li>
+        </ol>
+        <h3>Challenges</h3>
+        <ul>
+          <li>Show alliance color (press X for blue, B for red) on the side strips while the top strip keeps showing robot state.</li>
+          <li>Make a chase that runs clockwise around all four strips, then press the D-pad to reverse it.</li>
+          <li>Make the bottom strip mirror the trigger gauge on the top strip. (Hint: the bottom strip runs right to left.)</li>
+          <li>Flash the whole rectangle white for half a second each time A is pressed (<code>gamepad1.aWasPressed()</code>), then go back to the previous look.</li>
+        </ul>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg prism-card" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Reference</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">GoBildaPrismDriver</h2>
+        </div>
+        <dl class="tot-reference-grid">
+          <dt>hardwareMap.get(GoBildaPrismDriver.class, "prism")</dt><dd>Gets the driver. The name must match the I²C device name in your robot configuration (set it in the Device box above to practice).</dd>
+          <dt>setStripLength(int length)</dt><dd>How many LEDs are on the chain (0–255). Ours is 36.</dd>
+          <dt>insertAnimation(LayerHeight, animation)</dt><dd>Stores an animation in a layer of the driver object. Sends nothing. Returns false for DISABLED or null.</dd>
+          <dt>insertAndUpdateAnimation(LayerHeight, animation)</dt><dd>Stores and sends it. The animation restarts from the beginning.</dd>
+          <dt>updateAnimationFromIndex(LayerHeight)</dt><dd>Re-sends the animation already stored in that layer, after you've changed its settings.</dd>
+          <dt>updateAllAnimations()</dt><dd>Re-sends every stored layer (one I²C write each).</dd>
+          <dt>clearAllAnimations()</dt><dd>Clears all 10 layers on the Prism and in the driver.</dd>
+          <dt>setTargetFPS(int fps)</dt><dd>Animation frame rate the Prism aims for (0–32767).</dd>
+          <dt>getNumberOfLEDs() / getCurrentFPS()</dt><dd>Read back the strip length and the frame rate the Prism is actually running.</dd>
+          <dt>saveCurrentAnimationsToArtboard(Artboard)</dt><dd>Copies all current layers into one of 8 saved slots, <code>ARTBOARD_0</code>–<code>ARTBOARD_7</code>.</dd>
+          <dt>loadAnimationsFromArtboard(Artboard)</dt><dd>Replaces the current layers with a saved artboard, with one write.</dd>
+          <dt>setDefaultBootArtboard(Artboard) / enableDefaultBootArtboard(boolean)</dt><dd>Chooses which artboard plays at power-on, and turns that on or off.</dd>
+          <dt>getDeviceID(), getFirmwareVersionString(), getHardwareVersionString(), getPowerCycleCount(), getRunTime(TimeUnit)</dt><dd>Diagnostics. In the simulator the version strings read "simulated".</dd>
+          <dt>GoBildaPrismDriver.LayerHeight</dt><dd><code>LAYER_0</code> (bottom) … <code>LAYER_9</code> (top), plus <code>DISABLED</code>.</dd>
+          <dt>GoBildaPrismDriver.Artboard</dt><dd><code>ARTBOARD_0</code> … <code>ARTBOARD_7</code>.</dd>
+          <dt>Color</dt><dd><code>new Color(r, g, b)</code> (0–255), or <code>RED ORANGE YELLOW OLIVE GREEN CYAN BLUE TEAL MAGENTA PURPLE PINK WHITE TRANSPARENT</code>.</dd>
+          <dt>Direction</dt><dd><code>Direction.Forward</code> (toward higher indexes, clockwise for us) or <code>Direction.Backward</code>.</dd>
+        </dl>
+      </div>
+
+      <div class="tot-card tot-card--pad-lg prism-card" style="margin-bottom:20px;">
+        <div class="tot-section-heading">
+          <div class="tot-section-heading__eyebrow">Reference</div>
+          <h2 class="tot-section-heading__title" style="font-size:1.25rem;">PrismAnimations</h2>
+        </div>
+        <p style="margin:14px 0 0;">
+          Every animation has <code>setBrightness(0–100)</code>, <code>setStartIndex(int)</code>,
+          <code>setStopIndex(int)</code>, and <code>setIndexes(start, stop)</code>. By default it covers
+          indexes 0–255 at 100% brightness. Periods are in milliseconds, and you can also call
+          <code>setPeriod(2, TimeUnit.SECONDS)</code>. Speeds go from 0.0 to 1.0. Hues are in degrees (0–360).
+        </p>
+        <dl class="tot-reference-grid">
+          <dt>Solid(Color [, brightness] [, start, stop])</dt><dd>One color. <code>setPrimaryColor(Color)</code> or <code>(r, g, b)</code>. Default RED.</dd>
+          <dt>Blink(primary, secondary, period, primaryColorPeriod)</dt><dd>Shows primary for primaryColorPeriod ms, then secondary for the rest of the period. Defaults BLUE / RED, 2000 / 1000.</dd>
+          <dt>Pulse(primary, secondary, period)</dt><dd>Fades smoothly between two colors. Defaults GREEN / RED, 1000.</dd>
+          <dt>SineWave(primary, secondary, period, speed, offset, direction)</dt><dd>A rolling wave that blends two colors. <code>setOffset</code> shifts the blend. Defaults RED / BLUE, 1000, 0.5, 0.5, Forward.</dd>
+          <dt>DroidScan(primary, secondary)</dt><dd>An "eye" sweeping back and forth. <code>setEyeWidth</code>, <code>setTrailWidth</code>, <code>setSpeed</code>, <code>setDroidScanStyle(DroidScanStyle.NO_TAIL / FRONT_TAIL / BACK_TAIL / BOTH_TAIL)</code>.</dd>
+          <dt>Rainbow(startHue, stopHue, speed, direction, repeatAfter)</dt><dd>A scrolling hue gradient that repeats every repeatAfter LEDs. Defaults 0, 360, 0.5, Forward, 25.</dd>
+          <dt>Snakes(snakeLength, spacingBetween, repeatAfter, background, speed, direction, Color... colors)</dt><dd>Moving colored segments, one per color. Defaults 5, 2, 15, TRANSPARENT, 0.5, Backward, RED/WHITE/BLUE.</dd>
+          <dt>RainbowSnakes(startHue, stopHue, numberOfSnakes, snakeLength, spacingBetween, repeatAfter, background, speed, direction)</dt><dd>Snakes colored across a hue range.</dd>
+          <dt>Random(startHue, stopHue, speed)</dt><dd>Each LED changes to a random hue in the range. Default speed 0.1.</dd>
+          <dt>Sparkle(primary, secondary, period)</dt><dd>Random LEDs flash primary. <code>setSparkleProbability(0–255)</code>. Defaults WHITE / TRANSPARENT, 100 ms, 16.</dd>
+          <dt>SingleFill(Color... colors)</dt><dd>Blocks of <code>setPixelLength</code> LEDs slide in and stack up until the range fills, then the next color starts. <code>setStyle(SingleFillStyle.FillIn / FillOut)</code>.</dd>
+          <dt>PoliceLights()</dt><dd>Red / white / blue flashing. <code>setPoliceLightsStyle(PoliceLightsStyle.Style1 / Style2 / Style3)</code>, <code>setPrimary/Secondary/TertiaryColor</code>.</dd>
+        </dl>
+      </div>
+
+      <div class="prism-grid-2">
+        <div class="tot-card tot-card--pad-lg prism-card">
+          <div class="tot-section-heading">
+            <div class="tot-section-heading__eyebrow">On The Robot</div>
+            <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Moving your code to the Control Hub</h2>
+          </div>
+          <ol>
+            <li>Get goBILDA's Java driver for the Prism (four files: <code>GoBildaPrismDriver.java</code>, <code>PrismAnimations.java</code>, <code>Color.java</code>, <code>Direction.java</code>) from goBILDA's Prism product page or their GitHub. The examples here import them from <code>org.firstinspires.ftc.teamcode.Prism</code>. Change the imports if you put them in a different package.</li>
+            <li>Plug the Prism into an I²C port on the Control Hub, and the LED chain into the Prism, with the top strip first.</li>
+            <li>In the robot configuration, add an I²C device of type <strong>goBILDA® Prism RGB LED Driver</strong> and name it <code>prism</code>.</li>
+            <li>Copy your OpMode into TeamCode, build, and run it from the Driver Station.</li>
+          </ol>
+        </div>
+        <div class="tot-card tot-card--pad-lg prism-card">
+          <div class="tot-section-heading">
+            <div class="tot-section-heading__eyebrow">Honesty Check</div>
+            <h2 class="tot-section-heading__title" style="font-size:1.25rem;">Simulator vs. the real Prism</h2>
+          </div>
+          <ul>
+            <li><strong>Matches the real driver:</strong> class, method, and enum names, constructor overloads, default values, 10 layers, 8 artboards, index ranges, and when an I²C write happens.</li>
+            <li><strong>Approximate:</strong> how fast and exactly how the moving animations look (speed scaling, SineWave, SingleFill, PoliceLights styles, Sparkle probability). Use the robot to fine-tune.</li>
+            <li><strong>Java subset:</strong> your code is translated to JavaScript. Fields, methods, <code>if</code>/<code>switch</code>/loops, arrays, simple <code>enum</code>s, <code>String.format</code>, and <code>ElapsedTime</code> work. Lambdas, generic collections, inner classes, and <code>java.util.Random</code> don't. Dividing two <code>int</code>s only drops the decimals when the result goes straight into an <code>int</code> variable or an <code>(int)</code> cast.</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="tot-footer">
+  <div class="tot-footer__grid">
+    <div>
+      <img class="tot-footer__logo" src="../assets/img/logo-wide.png" alt="That ONE Team — Our Next Engineers">
+      <p class="tot-footer__tagline">Playing the Water Game Since 2013</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">That STEAM Space</div>
+      <p class="tot-footer__text">3516-A Plainfield Ave NE<br>Grand Rapids, MI 49525<br>P — 616.929.0686<br>info@thatoneteam.org</p>
+    </div>
+    <div>
+      <div class="tot-footer__heading">Explore</div>
+      <a class="tot-footer__link" href="../../index.html">Home</a>
+      <a class="tot-footer__link" href="../../index.html#modules">Modules</a>
+      <a class="tot-footer__link" href="../README.md">Build Guide</a>
+    </div>
+  </div>
+  <div class="tot-footer__bottom">
+    Copyright 2026 · That ONE Team &amp; Paradise Teams · Proud Representatives of FIRST® (For the Inspiration and Recognition of Science and Technology)
+  </div>
+</footer>
+
+<script src="../assets/js/module-storage.js"></script>
+<script src="../assets/js/nav.js"></script>
+<script src="../assets/js/theme.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ═════════════════════════════════════════════════════════════
+  //  1. OUR LED LAYOUT — 36 LEDs, wired clockwise, top strip first
+  // ═════════════════════════════════════════════════════════════
+  const STRIPS = [
+    { name: 'Top',    count: 12, start: 0  },
+    { name: 'Right',  count: 6,  start: 12 },
+    { name: 'Bottom', count: 12, start: 18 },
+    { name: 'Left',   count: 6,  start: 30 },
+  ];
+  const PHYSICAL_LEDS = 36;
+  const W = 720, H = 430;
+  // Frame proportions follow the real strips: 12 LEDs ≈ 200 mm, 6 LEDs ≈ 104 mm.
+  const FX0 = 170, FX1 = 640, FY0 = 112;
+  const FY1 = FY0 + Math.round((FX1 - FX0) * 104 / 200);
+  const LED_POS = [];
+  (function buildPositions() {
+    const tw = FX1 - FX0 - 24, th = FY1 - FY0 - 56;
+    for (let i = 0; i < 12; i++) LED_POS.push({ x: FX0 + 12 + (i + 0.5) * tw / 12, y: FY0, strip: 0, n: i });
+    for (let i = 0; i < 6; i++)  LED_POS.push({ x: FX1, y: FY0 + 28 + (i + 0.5) * th / 6, strip: 1, n: i });
+    for (let i = 0; i < 12; i++) LED_POS.push({ x: FX1 - 12 - (i + 0.5) * tw / 12, y: FY1, strip: 2, n: i });
+    for (let i = 0; i < 6; i++)  LED_POS.push({ x: FX0, y: FY1 - 28 - (i + 0.5) * th / 6, strip: 3, n: i });
+  })();
+
+  // ═════════════════════════════════════════════════════════════
+  //  2. JAVA-STYLE HELPERS (enums, Color, TimeUnit, String.format)
+  // ═════════════════════════════════════════════════════════════
+  class JavaError extends Error {}
+  class OpModeKilled extends Error {}
+
+  function makeEnum(typeName, names, extra) {
+    const E = { __enumName: typeName };
+    const list = names.map(function (n, i) {
+      const v = Object.assign({ _n: n, _o: i, _type: typeName,
+        name: function () { return n; }, ordinal: function () { return i; },
+        toString: function () { return n; } }, extra ? extra(n, i) : {});
+      E[n] = v;
+      return v;
+    });
+    E.values = function () { return list.slice(); };
+    E.valueOf = function (s) { if (!(s in E) || !E[s] || E[s]._type !== typeName) throw new JavaError('No enum constant ' + typeName + '.' + s); return E[s]; };
+    return E;
+  }
+  function isEnumOf(v, E) { return v != null && typeof v === 'object' && v._type === E.__enumName; }
+
+  function toInt(v) { const n = Number(v); return isFinite(n) ? Math.trunc(n) : 0; }
+  function isNum(v) { return typeof v === 'number'; }
+
+  class Color {
+    constructor(red, green, blue) {
+      if (arguments.length !== 3 || !isNum(red) || !isNum(green) || !isNum(blue))
+        throw new JavaError('Color needs three numbers: new Color(red, green, blue)');
+      this.red = Math.min(toInt(red), 255);
+      this.green = Math.min(toInt(green), 255);
+      this.blue = Math.min(toInt(blue), 255);
+    }
+    toString() { return this.red + ', ' + this.green + ', ' + this.blue; }
+    equals(o) { return o instanceof Color && o.red === this.red && o.green === this.green && o.blue === this.blue; }
+  }
+  Color.RED = new Color(255, 0, 0);
+  Color.ORANGE = new Color(255, 165, 0);
+  Color.YELLOW = new Color(255, 255, 0);
+  Color.OLIVE = new Color(128, 128, 0);
+  Color.GREEN = new Color(0, 255, 0);
+  Color.CYAN = new Color(0, 255, 255);
+  Color.BLUE = new Color(0, 0, 255);
+  Color.TEAL = new Color(0, 128, 128);
+  Color.MAGENTA = new Color(255, 0, 255);
+  Color.PURPLE = new Color(128, 0, 128);
+  Color.PINK = new Color(255, 20, 128);
+  Color.WHITE = new Color(255, 255, 255);
+  Color.TRANSPARENT = new Color(0, 0, 0);
+  function isColor(v) { return v instanceof Color; }
+
+  const Direction = makeEnum('Direction', ['Forward', 'Backward']);
+
+  const TU_MS = { NANOSECONDS: 1e-6, MICROSECONDS: 1e-3, MILLISECONDS: 1, SECONDS: 1000, MINUTES: 60000, HOURS: 3600000, DAYS: 86400000 };
+  const TimeUnit = makeEnum('TimeUnit', Object.keys(TU_MS), function (n) {
+    const ms = TU_MS[n];
+    return {
+      _ms: ms,
+      toMillis: function (d) { return Math.trunc(d * ms); },
+      toSeconds: function (d) { return Math.trunc(d * ms / 1000); },
+      toMinutes: function (d) { return Math.trunc(d * ms / 60000); },
+      convert: function (d, src) { return Math.trunc(d * src._ms / ms); },
+    };
+  });
+
+  function jstr(v) {
+    if (v === null || v === undefined) return 'null';
+    if (typeof v === 'number') return String(v);
+    if (Array.isArray(v)) return '[' + v.map(jstr).join(', ') + ']';
+    return String(v);
+  }
+  function jformat(fmt) {
+    const args = Array.prototype.slice.call(arguments, 1);
+    let ai = 0;
+    return String(fmt).replace(/%([-0+ ,]*)(\d+)?(?:\.(\d+))?([dfsSxXbcen%])/g, function (m, flags, width, prec, conv) {
+      if (conv === '%') return '%';
+      if (conv === 'n') return '\n';
+      const v = args[ai++];
+      let s;
+      switch (conv) {
+        case 'd': s = String(Math.trunc(Number(v))); if (flags.indexOf(',') >= 0) s = Number(s).toLocaleString('en-US'); break;
+        case 'f': s = Number(v).toFixed(prec === undefined ? 6 : +prec); break;
+        case 'e': s = Number(v).toExponential(prec === undefined ? 6 : +prec); break;
+        case 'x': s = (Number(v) >>> 0).toString(16); break;
+        case 'X': s = (Number(v) >>> 0).toString(16).toUpperCase(); break;
+        case 'b': s = String(!!v); break;
+        case 'S': s = jstr(v).toUpperCase(); break;
+        default: s = jstr(v);
+      }
+      if (flags.indexOf('+') >= 0 && (conv === 'd' || conv === 'f') && Number(v) >= 0) s = '+' + s;
+      if (width) s = flags.indexOf('-') >= 0 ? s.padEnd(+width) : s.padStart(+width, flags.indexOf('0') >= 0 ? '0' : ' ');
+      return s;
+    });
+  }
+  const JString = {
+    format: jformat,
+    valueOf: function (v) { return jstr(v); },
+    join: function (sep) { const rest = Array.prototype.slice.call(arguments, 1); return (rest.length === 1 && Array.isArray(rest[0]) ? rest[0] : rest).map(jstr).join(sep); },
+  };
+  if (!String.prototype.equals) {
+    Object.defineProperty(String.prototype, 'equals', { value: function (o) { return String(this) === o; } });
+    Object.defineProperty(String.prototype, 'equalsIgnoreCase', { value: function (o) { return o != null && String(this).toLowerCase() === String(o).toLowerCase(); } });
+    Object.defineProperty(String.prototype, 'isEmpty', { value: function () { return this.length === 0; } });
+    Object.defineProperty(String.prototype, 'charAt', { value: String.prototype.charAt });
+  }
+  const JMath = Object.create(Math);
+  JMath.toIntExact = function (v) { return Math.trunc(v); };
+  JMath.floorMod = function (a, b) { return ((a % b) + b) % b; };
+  JMath.floorDiv = function (a, b) { return Math.floor(a / b); };
+  JMath.toRadians = function (d) { return d * Math.PI / 180; };
+  JMath.toDegrees = function (r) { return r * 180 / Math.PI; };
+  JMath.signum = function (v) { return Math.sign(v); };
+  JMath.clamp = function (v, lo, hi) { return Math.max(lo, Math.min(hi, v)); };
+  JMath.round = function (v) { return Math.floor(v + 0.5); };
+  const Integer = { parseInt: function (s) { return parseInt(s, 10); }, toString: function (v) { return String(Math.trunc(v)); }, MAX_VALUE: 2147483647, MIN_VALUE: -2147483648, valueOf: function (v) { return toInt(v); } };
+  const JDouble = { parseDouble: function (s) { return parseFloat(s); }, toString: function (v) { return String(v); }, MAX_VALUE: Number.MAX_VALUE, valueOf: function (v) { return Number(v); } };
+
+  // ═════════════════════════════════════════════════════════════
+  //  3. PrismAnimations — ported from goBILDA's Java driver
+  //     (same names, overloads and default values)
+  // ═════════════════════════════════════════════════════════════
+  const AnimationType = makeEnum('AnimationType', ['NONE', 'SOLID', 'BLINK', 'PULSE', 'SINE_WAVE', 'DROID_SCAN', 'RAINBOW', 'SNAKES', 'RANDOM', 'SPARKLE', 'SINGLE_FILL', 'RAINBOW_SNAKES', 'POLICE_LIGHTS']);
+  const DroidScanStyle = makeEnum('DroidScanStyle', ['NO_TAIL', 'FRONT_TAIL', 'BACK_TAIL', 'BOTH_TAIL']);
+  const SingleFillStyle = makeEnum('SingleFillStyle', ['FillIn', 'FillOut']);
+  const PoliceLightsStyle = makeEnum('PoliceLightsStyle', ['Style1', 'Style2', 'Style3']);
+
+  function argKind(v) {
+    if (isNum(v)) return 'number';
+    if (isColor(v)) return 'Color';
+    if (v && v._type) return v._type;
+    if (v === null || v === undefined) return 'null';
+    return typeof v;
+  }
+  function badArgs(cls, args) {
+    return new JavaError('no suitable constructor found for ' + cls + '(' + args.map(argKind).join(', ') + ') — see the PrismAnimations reference below');
+  }
+  // Positional constructor: spec = [[field, kind], ...] in Java parameter order.
+  function positional(self, cls, spec, args) {
+    if (args.length > spec.length) throw badArgs(cls, args);
+    args.forEach(function (a, i) {
+      const field = spec[i][0], kind = spec[i][1];
+      if (kind === 'number' && !isNum(a)) throw badArgs(cls, args);
+      if (kind === 'Color' && !isColor(a)) throw badArgs(cls, args);
+      if (kind === 'Direction' && !isEnumOf(a, Direction)) throw badArgs(cls, args);
+      self[field] = kind === 'int' || (kind === 'number' && spec[i][2] === 'int') ? toInt(a) : a;
+    });
+  }
+  function needColor(v, method) { if (!isColor(v)) throw new JavaError(method + ' needs a Color (e.g. Color.RED or new Color(r, g, b))'); return v; }
+  function colorArgs(args, method) {
+    if (args.length === 3 && args.every(isNum)) return new Color(args[0], args[1], args[2]);
+    if (args.length === 1) return needColor(args[0], method);
+    throw new JavaError(method + '(...) takes a Color, or (red, green, blue)');
+  }
+  function periodArgs(args) {
+    if (args.length === 2) { if (!args[1] || args[1]._type !== 'TimeUnit') throw new JavaError('setPeriod(duration, TimeUnit) needs a TimeUnit, e.g. TimeUnit.SECONDS'); return args[1].toMillis(args[0]); }
+    return toInt(args[0]);
+  }
+
+  class AnimationBase {
+    constructor(type) {
+      this.animationType = type;
+      this.brightness = 100;
+      this.startIndex = 0;
+      this.stopIndex = 255;
+      this.layerHeight = null;
+    }
+    getBrightness() { return this.brightness; }
+    getStartIndex() { return this.startIndex; }
+    getStopIndex() { return this.stopIndex; }
+    setBrightness(b) { this.brightness = Math.min(toInt(b), 100); }
+    setStartIndex(i) { this.startIndex = Math.min(toInt(i), 255); }
+    setStopIndex(i) { this.stopIndex = Math.min(toInt(i), 255); }
+    setIndexes(a, b) { this.startIndex = toInt(a); this.stopIndex = toInt(b); }
+    toString() { return this.constructor.name + '[' + this.startIndex + '..' + this.stopIndex + ']'; }
+  }
+
+  class Solid extends AnimationBase {
+    constructor() {
+      super(AnimationType.SOLID);
+      const a = Array.prototype.slice.call(arguments);
+      this.primaryColor = Color.RED;
+      if (a.length === 0) return;
+      if (!isColor(a[0]) || !a.slice(1).every(isNum)) throw badArgs('Solid', a);
+      this.primaryColor = a[0];
+      if (a.length === 2) this.setBrightness(a[1]);
+      else if (a.length === 3) { this.setStartIndex(a[1]); this.setStopIndex(a[2]); }
+      else if (a.length === 4) { this.setBrightness(a[1]); this.setStartIndex(a[2]); this.setStopIndex(a[3]); }
+      else if (a.length > 4) throw badArgs('Solid', a);
+    }
+    setPrimaryColor() { this.primaryColor = colorArgs(Array.from(arguments), 'setPrimaryColor'); }
+    getPrimaryColor() { return this.primaryColor; }
+  }
+
+  class Blink extends AnimationBase {
+    constructor() {
+      super(AnimationType.BLINK);
+      this.primaryColor = Color.BLUE; this.secondaryColor = Color.RED; this.period = 2000; this.primaryColorPeriod = 1000;
+      positional(this, 'Blink', [['primaryColor', 'Color'], ['secondaryColor', 'Color'], ['period', 'number', 'int'], ['primaryColorPeriod', 'number', 'int']], Array.from(arguments));
+    }
+    setPeriod() { this.period = periodArgs(Array.from(arguments)); }
+    setPrimaryColorPeriod() { this.primaryColorPeriod = periodArgs(Array.from(arguments)); }
+    setPrimaryColor() { this.primaryColor = colorArgs(Array.from(arguments), 'setPrimaryColor'); }
+    setSecondaryColor() { this.secondaryColor = colorArgs(Array.from(arguments), 'setSecondaryColor'); }
+    getPeriod() { return this.period; }
+    getPrimaryColor() { return this.primaryColor; }
+    getSecondaryColor() { return this.secondaryColor; }
+    getPrimaryColorPeriod() { return this.primaryColorPeriod; }
+  }
+
+  class Pulse extends AnimationBase {
+    constructor() {
+      super(AnimationType.PULSE);
+      this.primaryColor = Color.GREEN; this.secondaryColor = Color.RED; this.period = 1000;
+      positional(this, 'Pulse', [['primaryColor', 'Color'], ['secondaryColor', 'Color'], ['period', 'number', 'int']], Array.from(arguments));
+    }
+    setPeriod() { this.period = periodArgs(Array.from(arguments)); }
+    setPrimaryColor() { this.primaryColor = colorArgs(Array.from(arguments), 'setPrimaryColor'); }
+    setSecondaryColor() { this.secondaryColor = colorArgs(Array.from(arguments), 'setSecondaryColor'); }
+    getPeriod() { return this.period; }
+    getPrimaryColor() { return this.primaryColor; }
+    getSecondaryColor() { return this.secondaryColor; }
+  }
+
+  class SineWave extends AnimationBase {
+    constructor() {
+      super(AnimationType.SINE_WAVE);
+      this.primaryColor = Color.RED; this.secondaryColor = Color.BLUE; this.direction = Direction.Forward;
+      this.offset = 0.5; this.speed = 0.5; this.period = 1000;
+      positional(this, 'SineWave', [['primaryColor', 'Color'], ['secondaryColor', 'Color'], ['period', 'number', 'int'], ['speed', 'number'], ['offset', 'number'], ['direction', 'Direction']], Array.from(arguments));
+    }
+    setPeriod() { this.period = periodArgs(Array.from(arguments)); }
+    setSpeed(s) { this.speed = +s; }
+    setOffset(o) { this.offset = +o; }
+    setDirection(d) { this.direction = d; }
+    setPrimaryColor() { this.primaryColor = colorArgs(Array.from(arguments), 'setPrimaryColor'); }
+    setSecondaryColor() { this.secondaryColor = colorArgs(Array.from(arguments), 'setSecondaryColor'); }
+    getPeriod() { return this.period; } getSpeed() { return this.speed; } getOffset() { return this.offset; }
+    getDirection() { return this.direction; } getPrimaryColor() { return this.primaryColor; } getSecondaryColor() { return this.secondaryColor; }
+  }
+
+  class DroidScan extends AnimationBase {
+    constructor() {
+      super(AnimationType.DROID_SCAN);
+      this.primaryColor = Color.RED; this.secondaryColor = Color.TRANSPARENT; this.style = DroidScanStyle.BOTH_TAIL;
+      this.speed = 0.4; this.eyeWidth = 3; this.trailWidth = 3;
+      positional(this, 'DroidScan', [['primaryColor', 'Color'], ['secondaryColor', 'Color']], Array.from(arguments));
+    }
+    setPrimaryColor(c) { this.primaryColor = needColor(c, 'setPrimaryColor'); }
+    setSecondaryColor(c) { this.secondaryColor = needColor(c, 'setSecondaryColor'); }
+    setSpeed(s) { this.speed = +s; }
+    setEyeWidth(w) { this.eyeWidth = toInt(w); }
+    setTrailWidth(w) { this.trailWidth = toInt(w); }
+    setDroidScanStyle(s) { this.style = s; }
+    getPrimaryColor() { return this.primaryColor; } getSecondaryColor() { return this.secondaryColor; } getSpeed() { return this.speed; }
+    getEyeWidth() { return this.eyeWidth; } getTrailWidth() { return this.trailWidth; } getDroidScanStyle() { return this.style; }
+  }
+  DroidScan.DroidScanStyle = DroidScanStyle;
+
+  class Rainbow extends AnimationBase {
+    constructor() {
+      super(AnimationType.RAINBOW);
+      this.startHue = 0; this.stopHue = 360; this.speed = 0.5; this.repeatAfter = 25; this.direction = Direction.Forward;
+      positional(this, 'Rainbow', [['startHue', 'number'], ['stopHue', 'number'], ['speed', 'number'], ['direction', 'Direction'], ['repeatAfter', 'number', 'int']], Array.from(arguments));
+    }
+    setSpeed(s) { this.speed = +s; } setStartHue(h) { this.startHue = +h; } setStopHue(h) { this.stopHue = +h; }
+    setHues(a, b) { this.startHue = +a; this.stopHue = +b; }
+    setDirection(d) { this.direction = d; } setRepeatAfter(r) { this.repeatAfter = toInt(r); }
+    getSpeed() { return this.speed; } getStartHue() { return this.startHue; } getStopHue() { return this.stopHue; }
+    getDirection() { return this.direction; } getRepeatAfter() { return this.repeatAfter; }
+  }
+
+  class RainbowSnakes extends AnimationBase {
+    constructor() {
+      super(AnimationType.RAINBOW_SNAKES);
+      this.numberOfSnakes = 3; this.snakeLength = 5; this.spacingBetween = 2; this.repeatAfter = 15;
+      this.startHue = 0; this.stopHue = 360; this.backgroundColor = Color.TRANSPARENT; this.speed = 0.5; this.direction = Direction.Backward;
+      const a = Array.from(arguments);
+      if (a.length === 1) throw badArgs('RainbowSnakes', a);
+      positional(this, 'RainbowSnakes', [['startHue', 'number'], ['stopHue', 'number'], ['numberOfSnakes', 'number', 'int'], ['snakeLength', 'number', 'int'], ['spacingBetween', 'number', 'int'], ['repeatAfter', 'number', 'int'], ['backgroundColor', 'Color'], ['speed', 'number'], ['direction', 'Direction']], a);
+    }
+    setSpeed(s) { this.speed = +s; } setStartHue(h) { this.startHue = +h; } setStopHue(h) { this.stopHue = +h; }
+    setHues(a, b) { this.startHue = +a; this.stopHue = +b; } setDirection(d) { this.direction = d; }
+    setSnakeLength(n) { this.snakeLength = toInt(n); } setRepeatAfter(n) { this.repeatAfter = toInt(n); }
+    setSpacingBetween(n) { this.spacingBetween = toInt(n); } setBackgroundColor(c) { this.backgroundColor = needColor(c, 'setBackgroundColor'); }
+    setNumberOfSnakes(n) { this.numberOfSnakes = toInt(n); }
+    getSpeed() { return this.speed; } getStartHue() { return this.startHue; } getStopHue() { return this.stopHue; }
+    getSnakeLength() { return this.snakeLength; } getRepeatAfter() { return this.repeatAfter; } getDirection() { return this.direction; }
+    getSpacingBetween() { return this.spacingBetween; } getBackgroundColor() { return this.backgroundColor; } getNumberOfSnakes() { return this.numberOfSnakes; }
+  }
+
+  class RandomAnim extends AnimationBase {
+    constructor() {
+      super(AnimationType.RANDOM);
+      this.startHue = 0; this.stopHue = 360; this.speed = 0.1;
+      const a = Array.from(arguments);
+      if (a.length === 1) throw badArgs('Random', a);
+      positional(this, 'Random', [['startHue', 'number'], ['stopHue', 'number'], ['speed', 'number']], a);
+    }
+    setSpeed(s) { this.speed = +s; } setStartHue(h) { this.startHue = +h; } setStopHue(h) { this.stopHue = +h; }
+    setHues(a, b) { this.startHue = +a; this.stopHue = +b; }
+    getSpeed() { return this.speed; } getStartHue() { return this.startHue; } getStopHue() { return this.stopHue; }
+  }
+
+  class Sparkle extends AnimationBase {
+    constructor() {
+      super(AnimationType.SPARKLE);
+      this.primaryColor = Color.WHITE; this.secondaryColor = Color.TRANSPARENT; this.sparkleProbability = 16; this.period = 100;
+      positional(this, 'Sparkle', [['primaryColor', 'Color'], ['secondaryColor', 'Color'], ['period', 'number', 'int']], Array.from(arguments));
+    }
+    setPeriod(p) { this.period = toInt(p); }
+    setPrimaryColor(c) { this.primaryColor = needColor(c, 'setPrimaryColor'); }
+    setSecondaryColor(c) { this.secondaryColor = needColor(c, 'setSecondaryColor'); }
+    setSparkleProbability(p) { this.sparkleProbability = toInt(p); }
+    getPeriod() { return this.period; } getPrimaryColor() { return this.primaryColor; }
+    getSecondaryColor() { return this.secondaryColor; } getSparkleProbability() { return this.sparkleProbability; }
+  }
+
+  function colorList(args, cls) {
+    const list = Array.isArray(args[0]) && args.length === 1 ? args[0] : args;
+    list.forEach(function (c) { if (!isColor(c)) throw badArgs(cls, args); });
+    return list.slice();
+  }
+
+  class SingleFill extends AnimationBase {
+    constructor() {
+      super(AnimationType.SINGLE_FILL);
+      this.colors = [Color.WHITE, Color.GREEN, Color.BLUE]; this.period = 750; this.speed = 0.5;
+      this.pixelLength = 3; this.direction = Direction.Backward; this.style = SingleFillStyle.FillIn;
+      if (arguments.length) this.colors = colorList(Array.from(arguments), 'SingleFill');
+    }
+    setPeriod() { this.period = periodArgs(Array.from(arguments)); }
+    setSpeed(s) { this.speed = +s; }
+    setColors() {
+      const list = colorList(Array.from(arguments), 'setColors');
+      for (let i = 0; i < Math.min(list.length, 10); i++) this.colors[i] = list[i];   // same as the real driver
+    }
+    setPixelLength(n) { this.pixelLength = toInt(n); } setStyle(s) { this.style = s; } setDirection(d) { this.direction = d; }
+    getPeriod() { return this.period; } getSpeed() { return this.speed; } getColors() { return this.colors; }
+    getPixelLength() { return this.pixelLength; } getDirection() { return this.direction; } getStyle() { return this.style; }
+  }
+  SingleFill.SingleFillStyle = SingleFillStyle;
+
+  class Snakes extends AnimationBase {
+    constructor() {
+      super(AnimationType.SNAKES);
+      this.colors = [Color.RED, Color.WHITE, Color.BLUE]; this.snakeLength = 5; this.spacingBetween = 2; this.repeatAfter = 15;
+      this.backgroundColor = Color.TRANSPARENT; this.speed = 0.5; this.direction = Direction.Backward;
+      const a = Array.from(arguments);
+      if (!a.length) return;
+      // Snakes([snakeLength[, spacingBetween[, repeatAfter[, backgroundColor, speed[, direction]]]]], Color... colors)
+      let i = 0;
+      const ints = [];
+      while (i < a.length && isNum(a[i]) && ints.length < 3) ints.push(toInt(a[i++]));
+      if (ints.length > 0) this.snakeLength = ints[0];
+      if (ints.length > 1) this.spacingBetween = ints[1];
+      if (ints.length > 2) {
+        this.repeatAfter = ints[2];
+        if (isColor(a[i]) && isNum(a[i + 1])) { this.backgroundColor = a[i]; this.speed = +a[i + 1]; i += 2;
+          if (isEnumOf(a[i], Direction)) this.direction = a[i++];
+        }
+      }
+      const rest = a.slice(i);
+      if (rest.length) this.colors = colorList(rest, 'Snakes');
+    }
+    setSpeed(s) { this.speed = +s; }
+    setColors() { this.colors = colorList(Array.from(arguments), 'setColors'); }
+    setDirection(d) { this.direction = d; } setSnakeLength(n) { this.snakeLength = toInt(n); }
+    setRepeatAfter(n) { this.repeatAfter = toInt(n); } setSpacingBetween(n) { this.spacingBetween = toInt(n); }
+    setBackgroundColor(c) { this.backgroundColor = needColor(c, 'setBackgroundColor'); }
+    getSpeed() { return this.speed; } getColors() { return this.colors; } getSnakeLength() { return this.snakeLength; }
+    getRepeatAfter() { return this.repeatAfter; } getDirection() { return this.direction; }
+    getSpacingBetween() { return this.spacingBetween; } getBackgroundColor() { return this.backgroundColor; }
+  }
+
+  class PoliceLights extends AnimationBase {
+    constructor() {
+      super(AnimationType.POLICE_LIGHTS);
+      if (arguments.length) throw badArgs('PoliceLights', Array.from(arguments));
+      this.red = Color.RED; this.white = Color.WHITE; this.blue = Color.BLUE; this.period = 1000; this.style = PoliceLightsStyle.Style1;
+    }
+    setPeriod() { this.period = periodArgs(Array.from(arguments)); }
+    setPoliceLightsStyle(s) { this.style = s; }
+    setPrimaryColor(c) { this.red = needColor(c, 'setPrimaryColor'); }
+    setSecondaryColor(c) { this.white = needColor(c, 'setSecondaryColor'); }
+    setTertiaryColor(c) { this.blue = needColor(c, 'setTertiaryColor'); }
+    getPoliceLightsStyle() { return this.style; } getPrimaryColor() { return this.red; }
+    getSecondaryColor() { return this.white; } getTertiaryColor() { return this.blue; }
+  }
+  PoliceLights.PoliceLightsStyle = PoliceLightsStyle;
+
+  const PrismAnimations = {
+    AnimationBase: AnimationBase, AnimationType: AnimationType,
+    Solid: Solid, Blink: Blink, Pulse: Pulse, SineWave: SineWave, DroidScan: DroidScan, Rainbow: Rainbow,
+    RainbowSnakes: RainbowSnakes, Random: RandomAnim, Sparkle: Sparkle, SingleFill: SingleFill, Snakes: Snakes, PoliceLights: PoliceLights,
+  };
+
+  // Copy an animation's settings the way an I²C write would: the device
+  // gets a frozen snapshot, so later setter calls do nothing until you update.
+  function snapshot(anim) {
+    const o = { type: anim.animationType._n };
+    Object.keys(anim).forEach(function (k) {
+      if (k === 'layerHeight' || k === 'animationType') return;
+      const v = anim[k];
+      if (isColor(v)) o[k] = [v.red, v.green, v.blue];
+      else if (Array.isArray(v)) o[k] = v.filter(isColor).slice(0, 10).map(function (c) { return [c.red, c.green, c.blue]; });
+      else if (v && v._type) o[k] = v._n;
+      else o[k] = v;
+    });
+    return o;
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  //  4. THE SIMULATED PRISM DEVICE
+  // ═════════════════════════════════════════════════════════════
+  const device = {
+    stripLength: 36,
+    targetFps: 100,
+    layers: new Array(10).fill(null),     // { snap, t0 }
+    artboards: new Array(8).fill(null),   // array of 10 snaps (or null)
+    bootArtboard: 0,
+    bootEnabled: false,
+    powerCycles: 1,
+    bootTime: performance.now(),
+    txnBuckets: [],      // [[100ms-bucket, count], ...] for the I²C/sec meter
+    txnTotal: 0,
+    measuredFps: 60,
+  };
+
+  function i2c(n) {
+    const bucket = Math.floor(performance.now() / 100);
+    const last = device.txnBuckets[device.txnBuckets.length - 1];
+    if (last && last[0] === bucket) last[1] += (n || 1);
+    else device.txnBuckets.push([bucket, n || 1]);
+    device.txnTotal += (n || 1);
+  }
+  function deviceSetLayer(idx, snap, restart) {
+    const prev = device.layers[idx];
+    const keepTime = !restart && prev && prev.snap.type === snap.type;
+    device.layers[idx] = { snap: snap, t0: keepTime ? prev.t0 : performance.now(), cache: null };
+    layersDirty = true;
+  }
+  function powerCycle() {
+    device.layers = new Array(10).fill(null);
+    device.powerCycles++;
+    device.bootTime = performance.now();
+    if (device.bootEnabled && device.artboards[device.bootArtboard]) loadArtboardToDevice(device.bootArtboard);
+    layersDirty = true;
+  }
+  function loadArtboardToDevice(i) {
+    const saved = device.artboards[i];
+    const now = performance.now();
+    device.layers = new Array(10).fill(null).map(function (_, k) { return saved && saved[k] ? { snap: saved[k], t0: now, cache: null } : null; });
+    layersDirty = true;
+  }
+
+  const LayerHeight = makeEnum('LayerHeight', ['LAYER_0', 'LAYER_1', 'LAYER_2', 'LAYER_3', 'LAYER_4', 'LAYER_5', 'LAYER_6', 'LAYER_7', 'LAYER_8', 'LAYER_9', 'DISABLED'],
+    function (n, i) { return { index: n === 'DISABLED' ? -1 : i }; });
+  const Artboard = makeEnum('Artboard', ['ARTBOARD_0', 'ARTBOARD_1', 'ARTBOARD_2', 'ARTBOARD_3', 'ARTBOARD_4', 'ARTBOARD_5', 'ARTBOARD_6', 'ARTBOARD_7'],
+    function (n, i) { return { index: i }; });
+
+  function needLayer(h, method) {
+    if (!isEnumOf(h, LayerHeight)) throw new JavaError(method + ' needs a LayerHeight, e.g. GoBildaPrismDriver.LayerHeight.LAYER_0 (got ' + argKind(h) + ')');
+    return h;
+  }
+  function needArtboard(a, method) {
+    if (!isEnumOf(a, Artboard)) throw new JavaError(method + ' needs an Artboard, e.g. GoBildaPrismDriver.Artboard.ARTBOARD_0');
+    return a;
+  }
+
+  // One GoBildaPrismDriver object per OpMode run, like the real SDK: the driver's
+  // local animation array starts empty, but the Prism itself keeps its layers.
+  class GoBildaPrismDriver {
+    constructor() { this._animations = new Array(10).fill(null); }
+    getDeviceName() { return 'goBILDA® Prism RGB LED Driver'; }
+    getDeviceID() { i2c(); return 3; }
+    getFirmwareVersion() { i2c(); return [0, 0, 0]; }
+    getFirmwareVersionString() { i2c(); return 'simulated'; }
+    getHardwareVersion() { i2c(); return [0, 0]; }
+    getHardwareVersionString() { i2c(); return 'simulated'; }
+    getPowerCycleCount() { i2c(); return device.powerCycles; }
+    getRunTime(unit) {
+      i2c();
+      const minutes = Math.floor((performance.now() - pageStart) / 60000);
+      return unit && unit.convert ? unit.convert(minutes, TimeUnit.MINUTES) : minutes;
+    }
+    getNumberOfLEDs() { i2c(); return device.stripLength; }
+    getCurrentFPS() { i2c(); return Math.round(Math.min(device.targetFps, device.measuredFps)); }
+    fpsLimited() { i2c(); return false; }
+    getBootAnimationArtboard() { i2c(); return 0; }
+    insertAnimation(height, animation) {
+      needLayer(height, 'insertAnimation');
+      if (height === LayerHeight.DISABLED || animation == null) return false;
+      if (!(animation instanceof AnimationBase)) throw new JavaError('insertAnimation needs a PrismAnimations animation (got ' + argKind(animation) + ')');
+      this._animations[height.index] = animation;
+      animation.layerHeight = height;
+      return true;
+    }
+    insertAndUpdateAnimation(height, animation) {
+      if (this.insertAnimation(height, animation)) return this._send(height, true);
+      return false;
+    }
+    updateAllAnimations() {
+      for (let i = 0; i < 10; i++) {
+        const a = this._animations[i];
+        if (a && a.layerHeight !== LayerHeight.DISABLED) { deviceSetLayer(i, snapshot(a), false); i2c(); }
+      }
+      return true;
+    }
+    updateAnimationFromIndex(height) { needLayer(height, 'updateAnimationFromIndex'); return this._send(height, false); }
+    _send(height, restart) {
+      if (height === LayerHeight.DISABLED || !this._animations[height.index]) return false;
+      const a = this._animations[height.index];
+      if (a.layerHeight === LayerHeight.DISABLED) return false;
+      deviceSetLayer(height.index, snapshot(a), restart);
+      i2c();
+      return true;
+    }
+    clearAllAnimations() {
+      i2c();
+      device.layers = new Array(10).fill(null);
+      this._animations.fill(null);
+      layersDirty = true;
+    }
+    setTargetFPS(fps) { i2c(); device.targetFps = Math.max(0, Math.min(toInt(fps), 0x7FFF)); }
+    setStripLength(len) { i2c(); device.stripLength = Math.max(0, Math.min(toInt(len), 0xFF)); layersDirty = true; }
+    saveCurrentAnimationsToArtboard(ab) {
+      needArtboard(ab, 'saveCurrentAnimationsToArtboard'); i2c();
+      device.artboards[ab.index] = device.layers.map(function (l) { return l ? l.snap : null; });
+      layersDirty = true;
+    }
+    loadAnimationsFromArtboard(ab) { needArtboard(ab, 'loadAnimationsFromArtboard'); i2c(); loadArtboardToDevice(ab.index); }
+    setDefaultBootArtboard(ab) { needArtboard(ab, 'setDefaultBootArtboard'); i2c(); device.bootArtboard = ab.index; layersDirty = true; }
+    enableDefaultBootArtboard(enable) { i2c(); device.bootEnabled = !!enable; layersDirty = true; }
+    toString() { return 'GoBildaPrismDriver'; }
+  }
+  GoBildaPrismDriver.LayerHeight = LayerHeight;
+  GoBildaPrismDriver.Artboard = Artboard;
+
+  // ═════════════════════════════════════════════════════════════
+  //  5. RENDERING EACH ANIMATION (approximate look and timing)
+  // ═════════════════════════════════════════════════════════════
+  const LEDS_PER_SEC_AT_FULL_SPEED = 30;
+
+  function hash3(a, b, c) {
+    let h = (a * 374761393 + b * 668265263 + c * 1442695041) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  }
+  function hsv(h) {
+    h = ((h % 360) + 360) % 360;
+    const x = h / 60, i = Math.floor(x), f = x - i, q = 1 - f;
+    const t = [[1, f, 0], [q, 1, 0], [0, 1, f], [0, q, 1], [f, 0, 1], [1, 0, q]][i] || [1, 0, 0];
+    return [t[0] * 255, t[1] * 255, t[2] * 255];
+  }
+  function lerpC(a, b, f) { return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f]; }
+  function scaleC(c, f) { return [c[0] * f, c[1] * f, c[2] * f]; }
+  function mod(a, b) { return ((a % b) + b) % b; }
+  function dirSign(d) { return d === 'Backward' ? -1 : 1; }
+  function travel(s, t) { return t / 1000 * Math.max(0, s.speed) * LEDS_PER_SEC_AT_FULL_SPEED; }
+
+  function singleFillFrames(n, pl) {
+    pl = Math.max(1, pl);
+    const frames = [];
+    let filled = 0, guard = 0;
+    while (filled < n && guard++ < 5000) {
+      for (let pos = 0; pos + Math.min(pl, n - filled) <= n - filled; pos++) frames.push([filled, pos]);
+      filled = Math.min(n, filled + pl);
+      frames.push([filled, -1]);
+    }
+    return frames.length ? frames : [[n, -1]];
+  }
+
+  // k = position inside the animation's range (0..n-1), t = ms since the animation started.
+  // Returns [r, g, b] or null (transparent).
+  function animPixel(layer, s, k, n, t) {
+    switch (s.type) {
+      case 'SOLID': return s.primaryColor;
+      case 'BLINK': return mod(t, Math.max(1, s.period)) < s.primaryColorPeriod ? s.primaryColor : s.secondaryColor;
+      case 'PULSE': {
+        const f = 0.5 - 0.5 * Math.cos(2 * Math.PI * t / Math.max(1, s.period));
+        return lerpC(s.primaryColor, s.secondaryColor, f);
+      }
+      case 'SINE_WAVE': {
+        const ph = 2 * Math.PI * (k * Math.max(0.02, s.speed) * 0.15 - dirSign(s.direction) * t / Math.max(1, s.period));
+        const f = Math.max(0, Math.min(1, s.offset + 0.5 * Math.sin(ph)));
+        return lerpC(s.secondaryColor, s.primaryColor, f);
+      }
+      case 'DROID_SCAN': {
+        const w = Math.max(1, Math.min(s.eyeWidth, n));
+        const span = n - w;
+        let pos = 0, forward = true;
+        if (span > 0) {
+          const p = mod(travel(s, t), 2 * span);
+          forward = p < span;
+          pos = Math.floor(forward ? p : 2 * span - p);
+        }
+        if (k >= pos && k < pos + w) return s.primaryColor;
+        const before = k < pos;
+        const dist = before ? pos - k : k - (pos + w - 1);
+        const side = (before === forward) ? 'back' : 'front';
+        const style = s.style;
+        const allowed = style === 'BOTH_TAIL' || (style === 'FRONT_TAIL' && side === 'front') || (style === 'BACK_TAIL' && side === 'back');
+        if (allowed && dist <= s.trailWidth) {
+          const f = 1 - dist / (s.trailWidth + 1);
+          const bg = s.secondaryColor;
+          return (bg[0] | bg[1] | bg[2]) ? lerpC(bg, s.primaryColor, f) : scaleC(s.primaryColor, f);
+        }
+        return s.secondaryColor;
+      }
+      case 'RAINBOW': {
+        const rep = s.repeatAfter > 0 ? s.repeatAfter : n;
+        const off = travel(s, t) * dirSign(s.direction);
+        const ph = mod((k - off) / rep, 1);
+        return hsv(s.startHue + (s.stopHue - s.startHue) * ph);
+      }
+      case 'SNAKES':
+      case 'RAINBOW_SNAKES': {
+        const count = s.type === 'SNAKES' ? s.colors.length : Math.max(0, s.numberOfSnakes);
+        if (!count) return s.backgroundColor;
+        const unit = Math.max(1, s.snakeLength + s.spacingBetween);
+        const cycle = Math.max(s.repeatAfter, count * unit, 1);
+        const v = Math.floor(mod(k - travel(s, t) * dirSign(s.direction), cycle));
+        const j = Math.floor(v / unit);
+        if (j < count && (v % unit) < s.snakeLength) {
+          return s.type === 'SNAKES' ? s.colors[j] : hsv(s.startHue + (s.stopHue - s.startHue) * j / count);
+        }
+        return s.backgroundColor;
+      }
+      case 'RANDOM': {
+        const rate = Math.max(0.01, s.speed) * 10;   // changes per second per LED
+        const slot = Math.floor(t / 1000 * rate + hash3(k, 7, 11));
+        return hsv(s.startHue + (s.stopHue - s.startHue) * hash3(k, slot, 3));
+      }
+      case 'SPARKLE': {
+        const slot = Math.floor(t / Math.max(10, s.period));
+        return hash3(k, slot, 5) < s.sparkleProbability / 255 ? s.primaryColor : s.secondaryColor;
+      }
+      case 'SINGLE_FILL': {
+        if (!s.colors.length) return null;
+        if (!layer.cache || layer.cache.n !== n) layer.cache = { n: n, frames: singleFillFrames(n, s.pixelLength) };
+        const frames = layer.cache.frames;
+        const stepMs = Math.max(8, s.period / 20 / Math.max(0.05, s.speed * 2));
+        const step = Math.floor(t / stepMs);
+        const ci = Math.floor(step / frames.length);
+        let fi = step % frames.length;
+        const L = s.colors.length;
+        let fg, bg;
+        if (s.style === 'FillOut') { fi = frames.length - 1 - fi; fg = s.colors[ci % L]; bg = L > 1 ? s.colors[(ci + 1) % L] : null; }
+        else { fg = s.colors[ci % L]; bg = L > 1 ? s.colors[(ci + L - 1) % L] : null; }
+        const fr = frames[fi];
+        const v = s.direction === 'Forward' ? k : n - 1 - k;   // v = 0 is where blocks enter
+        const pl = Math.max(1, s.pixelLength);
+        if (v >= n - fr[0]) return fg;
+        if (fr[1] >= 0 && v >= fr[1] && v < fr[1] + pl) return fg;
+        return bg;
+      }
+      case 'POLICE_LIGHTS': {
+        const ph = mod(t, Math.max(1, s.period)) / Math.max(1, s.period);
+        const half = k < n / 2;
+        if (s.style === 'Style3') {
+          const seg = Math.min(2, Math.floor(3 * k / n));
+          return [s.red, s.white, s.blue][(seg + Math.floor(ph * 3)) % 3];
+        }
+        if (s.style === 'Style2') {
+          const local = (ph % 0.5) / 0.5;
+          const flash = local < 0.2 || (local >= 0.3 && local < 0.5);
+          if (!flash) return null;
+          if (ph < 0.5) return half ? s.red : (local < 0.2 ? s.white : null);
+          return half ? (local < 0.2 ? s.white : null) : s.blue;
+        }
+        if (ph < 0.5) return half ? s.red : null;
+        return half ? null : s.blue;
+      }
+    }
+    return null;
+  }
+
+  let lastFrameTime = performance.now();
+  function computeFrame(now) {
+    const fps = Math.max(1, device.targetFps || 1);
+    const buf = new Array(PHYSICAL_LEDS).fill(null);
+    for (let L = 0; L < 10; L++) {
+      const layer = device.layers[L];
+      if (!layer) continue;
+      const s = layer.snap;
+      const lo = Math.max(0, s.startIndex);
+      const hi = Math.min(s.stopIndex, device.stripLength - 1);
+      const n = hi - lo + 1;
+      if (n <= 0) continue;
+      const t = Math.floor((now - layer.t0) * fps / 1000) * 1000 / fps;
+      const bright = Math.max(0, Math.min(100, s.brightness)) / 100;
+      for (let i = lo; i <= hi && i < PHYSICAL_LEDS; i++) {
+        const c = animPixel(layer, s, i - lo, n, t);
+        if (!c) continue;
+        const r = c[0] * bright, g = c[1] * bright, b = c[2] * bright;
+        if (r < 0.5 && g < 0.5 && b < 0.5) continue;    // black = transparent: lower layers show through
+        buf[i] = [r, g, b];
+      }
+    }
+    return buf;
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  //  6. DRAWING
+  // ═════════════════════════════════════════════════════════════
+  const canvas = document.getElementById('prism-canvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  let showIndexes = true;
+  let hoverLed = -1;
+  let lastBuf = new Array(PHYSICAL_LEDS).fill(null);
+
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+
+  function draw(now) {
+    const buf = computeFrame(now);
+    lastBuf = buf;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#0b0f17';
+    ctx.fillRect(0, 0, W, H);
+
+    // Prism module + data wire into LED 0
+    roundRect(20, 22, 112, 56, 8); ctx.fillStyle = '#1b2433'; ctx.fill();
+    ctx.strokeStyle = '#3a4a63'; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = '#ffd100'; ctx.font = '700 13px ui-monospace, Menlo, Consolas, monospace'; ctx.textAlign = 'left';
+    ctx.fillText('PRISM', 32, 44);
+    ctx.fillStyle = '#8b9ab3'; ctx.font = '10px ui-monospace, Menlo, Consolas, monospace';
+    ctx.fillText('I²C 0x38 · ' + device.stripLength + ' LEDs', 32, 62);
+    ctx.strokeStyle = '#4b5d7a'; ctx.lineWidth = 2; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(132, 50); ctx.lineTo(150, 50); ctx.lineTo(150, FY0); ctx.lineTo(FX0 - 2, FY0); ctx.stroke();
+    ctx.fillStyle = '#8b9ab3'; ctx.fillText('DATA IN', 140, 40);
+
+    // Strip bodies
+    ctx.fillStyle = '#1a2130'; ctx.strokeStyle = '#2b3547'; ctx.lineWidth = 1;
+    const T = 22;
+    [[FX0, FY0 - T / 2, FX1 - FX0, T], [FX1 - T / 2, FY0 + 6, T, FY1 - FY0 - 12], [FX0, FY1 - T / 2, FX1 - FX0, T], [FX0 - T / 2, FY0 + 6, T, FY1 - FY0 - 12]].forEach(function (r) {
+      roundRect(r[0], r[1], r[2], r[3], 5); ctx.fill(); ctx.stroke();
+    });
+
+    // Labels + clockwise arrows
+    ctx.fillStyle = '#6f7f99'; ctx.font = '600 11px ui-monospace, Menlo, Consolas, monospace'; ctx.textAlign = 'center';
+    ctx.fillText('TOP · 0–11  →', (FX0 + FX1) / 2, FY0 - 22);
+    ctx.fillText('←  BOTTOM · 18–29', (FX0 + FX1) / 2, FY1 + 32);
+    ctx.save(); ctx.translate(FX1 + 30, (FY0 + FY1) / 2); ctx.rotate(Math.PI / 2); ctx.fillText('RIGHT · 12–17  →', 0, 0); ctx.restore();
+    ctx.save(); ctx.translate(FX0 - 30, (FY0 + FY1) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText('LEFT · 30–35  →', 0, 0); ctx.restore();
+
+    // Center readout
+    ctx.fillStyle = '#4f5d75'; ctx.font = '11px ui-monospace, Menlo, Consolas, monospace';
+    const active = device.layers.filter(Boolean).length;
+    ctx.fillText(active ? active + ' active layer' + (active > 1 ? 's' : '') : 'no animations', (FX0 + FX1) / 2, (FY0 + FY1) / 2 - 4);
+    if (device.stripLength < PHYSICAL_LEDS) {
+      ctx.fillStyle = '#c99b12';
+      ctx.fillText('strip length ' + device.stripLength + ' — LEDs ' + device.stripLength + '–35 not driven', (FX0 + FX1) / 2, (FY0 + FY1) / 2 + 14);
+    } else if (device.stripLength > PHYSICAL_LEDS) {
+      ctx.fillStyle = '#c99b12';
+      ctx.fillText('strip length ' + device.stripLength + ' > 36 real LEDs', (FX0 + FX1) / 2, (FY0 + FY1) / 2 + 14);
+    }
+
+    // LEDs: dark package, then additive glow
+    for (let i = 0; i < PHYSICAL_LEDS; i++) {
+      const p = LED_POS[i];
+      ctx.fillStyle = '#5a6272'; ctx.fillRect(p.x - 6, p.y - 6, 12, 12);
+      ctx.fillStyle = '#1f242e'; ctx.beginPath(); ctx.arc(p.x, p.y, 4.4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < PHYSICAL_LEDS; i++) {
+      const c = buf[i];
+      if (!c) continue;
+      const p = LED_POS[i];
+      const m = Math.max(c[0], c[1], c[2]) / 255;
+      const k = m > 0 ? 255 / Math.max(c[0], c[1], c[2]) : 0;
+      const full = 'rgb(' + Math.round(c[0] * k) + ',' + Math.round(c[1] * k) + ',' + Math.round(c[2] * k) + ')';
+      const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 26);
+      g.addColorStop(0, 'rgba(' + Math.round(c[0] * k) + ',' + Math.round(c[1] * k) + ',' + Math.round(c[2] * k) + ',' + (0.55 * m).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.35 + 0.65 * m;
+      ctx.fillStyle = full; ctx.beginPath(); ctx.arc(p.x, p.y, 6.5, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = m;
+      ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.arc(p.x, p.y, 2.6, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Index labels (inside the rectangle)
+    if (showIndexes) {
+      ctx.font = '10px ui-monospace, Menlo, Consolas, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (let i = 0; i < PHYSICAL_LEDS; i++) {
+        const p = LED_POS[i];
+        const ox = p.strip === 1 ? -26 : p.strip === 3 ? 26 : 0;
+        const oy = p.strip === 0 ? 22 : p.strip === 2 ? -22 : 0;
+        ctx.fillStyle = i === hoverLed ? '#ffd100' : (i >= device.stripLength ? '#3a4558' : '#7d8ca6');
+        ctx.fillText(String(i), p.x + ox, p.y + oy);
+      }
+      ctx.textBaseline = 'alphabetic';
+    }
+    if (hoverLed >= 0) {
+      const p = LED_POS[hoverLed];
+      ctx.strokeStyle = '#ffd100'; ctx.lineWidth = 2; ctx.strokeRect(p.x - 9, p.y - 9, 18, 18);
+    }
+  }
+
+  canvas.addEventListener('pointermove', function (e) {
+    const r = canvas.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width * W, y = (e.clientY - r.top) / r.height * H;
+    let best = -1, bd = 18 * 18;
+    LED_POS.forEach(function (p, i) { const d = (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y); if (d < bd) { bd = d; best = i; } });
+    hoverLed = best;
+    updateHint();
+  });
+  canvas.addEventListener('pointerleave', function () { hoverLed = -1; updateHint(); });
+  function updateHint() {
+    const el = document.getElementById('led-hint');
+    if (hoverLed < 0) { el.textContent = 'Hover over an LED to see its index.'; return; }
+    const p = LED_POS[hoverLed];
+    const c = lastBuf[hoverLed];
+    el.textContent = 'LED ' + hoverLed + ' · ' + STRIPS[p.strip].name + ' strip, LED ' + (p.n + 1) + ' of ' + STRIPS[p.strip].count +
+      ' · ' + (c ? 'rgb(' + c.map(function (v) { return Math.round(v); }).join(', ') + ')' : 'off / transparent');
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  //  7. JAVA → JAVASCRIPT TRANSLATOR (a teaching-sized subset)
+  // ═════════════════════════════════════════════════════════════
+  function stripComments(src) {
+    let out = '', i = 0;
+    const n = src.length;
+    while (i < n) {
+      const c = src[i], d = src[i + 1];
+      if (c === '"' || c === "'") {
+        let j = i + 1;
+        while (j < n && src[j] !== c && src[j] !== '\n') { if (src[j] === '\\') j++; j++; }
+        out += src.slice(i, j + 1); i = j + 1; continue;
+      }
+      if (c === '/' && d === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+      if (c === '/' && d === '*') {
+        const e = src.indexOf('*/', i + 2);
+        const end = e < 0 ? n : e + 2;
+        out += src.slice(i, end).replace(/[^\n]/g, ' ');
+        i = end; continue;
+      }
+      out += c; i++;
+    }
+    return out;
+  }
+  function maskStrings(code) {
+    const strings = [];
+    const masked = code.replace(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, function (s) { strings.push(s); return '__STR' + (strings.length - 1) + '__'; });
+    return { code: masked, strings: strings };
+  }
+  function unmaskStrings(code, strings) { return code.replace(/__STR(\d+)__/g, function (_, i) { return strings[+i]; }); }
+
+  function matchClose(code, open) {
+    const o = code[open], c = o === '(' ? ')' : o === '{' ? '}' : ']';
+    let depth = 0;
+    for (let i = open; i < code.length; i++) {
+      if (code[i] === o) depth++;
+      else if (code[i] === c) { depth--; if (depth === 0) return i; }
+    }
+    throw new JavaError("missing '" + c + "' — check that every '" + o + "' is closed");
+  }
+  function lineOf(code, idx) { return code.slice(0, idx).split('\n').length; }
+
+  const PRIM = 'int|long|short|byte|char|float|double|boolean|var';
+  const TYPE_RE_SRC = '(?:' + PRIM + '|String|[A-Z][\\w$]*(?:\\.[A-Z][\\w$]*)*(?:\\s*<[^<>;()=]*(?:<[^<>;()=]*>[^<>;()=]*)*>)?)(?:\\s*\\[\\s*\\])*';
+
+  // Replace local variable declarations "Type name" with "let name". For a single int-typed
+  // declaration with an initializer, wrap it in __toInt(...) so int division truncates like Java.
+  function convertDecls(code) {
+    const re = new RegExp('(^|[^\\w.$])(' + TYPE_RE_SRC + ')\\s+([a-zA-Z_$][\\w$]*)(?=\\s*(?:=(?!=)|;|,))', 'g');
+    let out = '', last = 0, m;
+    while ((m = re.exec(code))) {
+      const typeStr = m[2].replace(/\s+/g, '');
+      const name = m[3];
+      const declStart = m.index + m[1].length;
+      out += code.slice(last, declStart) + 'let ' + name;
+      let after = m.index + m[0].length;
+      last = after;
+      const isIntType = /^(int|long|short|byte)$/.test(typeStr);
+      const eq = /^\s*=(?!=)/.exec(code.slice(after));
+      if (isIntType && eq) {
+        // find end of initializer: ';' or ',' at depth 0
+        let i = after + eq[0].length, depth = 0, end = -1, hasComma = false;
+        for (; i < code.length; i++) {
+          const ch = code[i];
+          if (ch === '(' || ch === '[' || ch === '{') depth++;
+          else if (ch === ')' || ch === ']' || ch === '}') { if (depth === 0) { end = i; break; } depth--; }
+          else if (depth === 0 && ch === ';') { end = i; break; }
+          else if (depth === 0 && ch === ',') { hasComma = true; end = i; break; }
+        }
+        if (end > 0 && !hasComma && code.slice(after + eq[0].length, end).trim()) {
+          out += eq[0] + ' __toInt(' + code.slice(after + eq[0].length, end) + ')';
+          last = end;
+        }
+        re.lastIndex = Math.max(re.lastIndex, last);
+      }
+    }
+    return out + code.slice(last);
+  }
+
+  function convertIntCasts(code) {
+    const re = /\(\s*(?:int|long|short|byte|char)\s*\)\s*/;
+    let m, guard = 0;
+    while ((m = re.exec(code)) && guard++ < 2000) {
+      const s = m.index, after = s + m[0].length;
+      let end;
+      if (code[after] === '(') end = matchClose(code, after) + 1;
+      else {
+        const mm = /^[-+]?[\w$]+(?:\s*\.\s*[\w$]+|\s*\[[^\]]*\])*/.exec(code.slice(after));
+        end = after + (mm ? mm[0].length : 0);
+        while (code[end] === '(') { end = matchClose(code, end) + 1; const more = /^(?:\s*\.\s*[\w$]+|\s*\[[^\]]*\])*/.exec(code.slice(end)); end += more ? more[0].length : 0; }
+      }
+      code = code.slice(0, s) + '__toInt(' + code.slice(after, end) + ')' + code.slice(end);
+    }
+    return code;
+  }
+
+  function convertArrays(code) {
+    let m, guard = 0;
+    // new Type[]{a, b}  ->  [a, b]
+    const re1 = /new\s+[\w.$]+(?:\s*\[\s*\])+\s*\{/;
+    while ((m = re1.exec(code)) && guard++ < 500) {
+      const open = m.index + m[0].length - 1, close = matchClose(code, open);
+      code = code.slice(0, m.index) + '[' + code.slice(open + 1, close) + ']' + code.slice(close + 1);
+    }
+    // Type[] name = {a, b}  ->  Type[] name = [a, b]
+    const re2 = /\[\s*\]\s*[\w$]+\s*=\s*\{/;
+    while ((m = re2.exec(code)) && guard++ < 1000) {
+      const open = m.index + m[0].length - 1, close = matchClose(code, open);
+      code = code.slice(0, open) + '[' + code.slice(open + 1, close) + ']' + code.slice(close + 1);
+    }
+    // new Type[n]  ->  __newArray(n, default)
+    const re3 = /new\s+([\w.$]+)\s*\[/;
+    while ((m = re3.exec(code)) && guard++ < 1500) {
+      const open = m.index + m[0].length - 1, close = matchClose(code, open);
+      const t = m[1];
+      const def = /^(int|long|short|byte|float|double|char)$/.test(t) ? '0' : t === 'boolean' ? 'false' : 'null';
+      code = code.slice(0, m.index) + '__newArray(' + code.slice(open + 1, close) + ', ' + def + ')' + code.slice(close + 1);
+    }
+    return code;
+  }
+
+  function addLoopTicks(code) {
+    const re = /\b(while|for)\s*\(|\bdo\s*\{/g;
+    let out = '', last = 0, m;
+    while ((m = re.exec(code))) {
+      if (m[0].charAt(0) === 'd') {
+        const idx = m.index + m[0].length;
+        out += code.slice(last, idx) + ' await __tick();';
+        last = idx;
+        continue;
+      }
+      const open = m.index + m[0].length - 1;
+      const close = matchClose(code, open);
+      let k = close + 1;
+      while (k < code.length && /\s/.test(code[k])) k++;
+      if (code[k] === '{') { out += code.slice(last, k + 1) + ' await __tick();'; last = k + 1; re.lastIndex = k + 1; }
+      else if (code[k] !== ';') {
+        // single-statement loop body: wrap it in braces with a tick
+        let depth = 0, e = k;
+        for (; e < code.length; e++) {
+          const ch = code[e];
+          if (ch === '(' || ch === '{' || ch === '[') depth++;
+          else if (ch === ')' || ch === '}' || ch === ']') depth--;
+          else if (ch === ';' && depth === 0) break;
+        }
+        out += code.slice(last, k) + '{ await __tick(); ' + code.slice(k, e + 1) + ' }';
+        last = e + 1; re.lastIndex = e + 1;
+      } else re.lastIndex = close + 1;
+    }
+    return out + code.slice(last);
+  }
+
+  function translateBody(code, ctxInfo) {
+    code = code.replace(/\bthis\s*\.\s*/g, '');
+    code = code.replace(/\.class\b/g, '');
+    code = code.replace(/\bcatch\s*\(\s*(?:final\s+)?[\w.$]+(?:\s*\|\s*[\w.$]+)*\s+([\w$]+)\s*\)\s*\{/g, 'catch ($1) { __rethrowKill($1);');
+    code = code.replace(/\bfinal\s+/g, '');
+    code = convertArrays(code);
+    code = code.replace(new RegExp('\\bfor\\s*\\(\\s*' + TYPE_RE_SRC + '\\s+([\\w$]+)\\s*:', 'g'), 'for (const $1 of ');
+    code = convertDecls(code);
+    code = convertIntCasts(code);
+    code = code.replace(/\(\s*(?:float|double|Color|Object|String|Integer|Double|PrismAnimations\.\w+|GoBildaPrismDriver)\s*\)\s*(?=[\w$(])/g, '');
+    code = code.replace(/(?<![\w.])(\d+\.?\d*(?:[eE][+-]?\d+)?|\.\d+(?:[eE][+-]?\d+)?)[fFdDlL]\b/g, '$1');
+    code = code.replace(/\.length\s*\(\s*\)/g, '.length');
+    code = code.replace(/\bSystem\.out\.print(?:ln|f)?\s*\(/g, '__println(');
+    code = code.replace(/\bThread\.sleep\s*\(/g, 'sleep(');
+    const awaitNames = ['sleep', 'waitForStart', 'idle'].concat(ctxInfo.methods);
+    const awaitRe = new RegExp('(^|[^.\\w$])(' + awaitNames.join('|') + ')\\s*\\(', 'g');
+    code = code.replace(awaitRe, '$1await $2(');
+    code = code.replace(/\bcase\s+([A-Z_][\w$]*)\s*:/g, function (m, c) { return ctxInfo.enumConst[c] ? 'case ' + ctxInfo.enumConst[c] + '.' + c + ':' : m; });
+    code = addLoopTicks(code);
+    return code;
+  }
+
+  function parseParams(p) {
+    p = p.trim();
+    if (!p) return '';
+    return p.split(',').map(function (s) {
+      s = s.trim().replace(/\bfinal\s+/, '').replace(/@\w+\s*/g, '');
+      const vararg = /\.\.\./.test(s);
+      const name = (/([\w$]+)\s*$/.exec(s) || [])[1];
+      if (!name) throw new JavaError('could not read parameter "' + s + '"');
+      return (vararg ? '...' : '') + name;
+    }).join(', ');
+  }
+
+  function compileJava(src) {
+    let code = stripComments(src);
+    const ms = maskStrings(code);
+    code = ms.code;
+    code = code.replace(/^\s*(package|import)\s[^;]*;/gm, '');
+    code = code.replace(/@\w+(?:\.\w+)*(?:\s*\([^()]*\))?/g, '');
+
+    let className = 'OpMode', body, superName = '';
+    const cm = /\bclass\s+([\w$]+)([^{]*)\{/.exec(code);
+    if (cm) {
+      className = cm[1];
+      const ext = /extends\s+([\w.$]+)/.exec(cm[2]);
+      superName = ext ? ext[1] : '';
+      const open = cm.index + cm[0].length - 1;
+      body = code.slice(open + 1, matchClose(code, open));
+    } else {
+      body = 'void runOpMode() {' + code + '}';
+    }
+
+    // Split the class body into fields, methods and enums
+    const members = [];
+    let i = 0;
+    while (i < body.length) {
+      let j = i, paren = 0;
+      while (j < body.length) {
+        const ch = body[j];
+        if (ch === '(') paren++;
+        else if (ch === ')') paren--;
+        else if (paren === 0 && (ch === ';' || ch === '{')) break;
+        j++;
+      }
+      const header = body.slice(i, j).trim();
+      if (j >= body.length) { if (header) throw new JavaError('unexpected code near "' + header.slice(0, 40) + '"'); break; }
+      if (body[j] === ';') { if (header) members.push({ kind: 'field', text: header }); i = j + 1; continue; }
+      const eqIdx = header.indexOf('=');
+      if (eqIdx >= 0 && header.slice(0, eqIdx).indexOf('(') < 0) {
+        const close = matchClose(body, j);
+        let k = body.indexOf(';', close);
+        if (k < 0) k = body.length;
+        members.push({ kind: 'field', text: body.slice(i, k).trim() });
+        i = k + 1; continue;
+      }
+      const close = matchClose(body, j);
+      const inner = body.slice(j + 1, close);
+      if (/\benum\b/.test(header)) members.push({ kind: 'enum', header: header, inner: inner });
+      else if (/\b(class|interface)\b/.test(header)) throw new JavaError('nested classes and interfaces aren\'t supported in the simulator — use fields and methods instead');
+      else if (/\(/.test(header)) members.push({ kind: 'method', header: header, inner: inner });
+      else if (/^(static)?$/.test(header)) members.push({ kind: 'init', inner: inner });
+      else throw new JavaError('could not understand "' + header.slice(0, 50) + '"');
+      i = close + 1;
+    }
+
+    const ctxInfo = { methods: [], enumConst: {} };
+    let enumsJs = '';
+    members.forEach(function (m) {
+      if (m.kind === 'enum') {
+        const name = (/\benum\s+([\w$]+)/.exec(m.header) || [])[1];
+        const consts = m.inner.replace(/;\s*$/, '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+        consts.forEach(function (c) { if (!/^[A-Za-z_$][\w$]*$/.test(c)) throw new JavaError('enum ' + name + ': only simple constants like RED, GREEN are supported'); if (!ctxInfo.enumConst[c]) ctxInfo.enumConst[c] = name; });
+        enumsJs += 'const ' + name + ' = __makeEnum(' + JSON.stringify(name) + ', ' + JSON.stringify(consts) + ');\n';
+      } else if (m.kind === 'method') {
+        const hm = /([\w$]+)\s*\(([^)]*)\)\s*(?:throws\s+[\w.$,\s]+)?$/.exec(m.header);
+        if (!hm) throw new JavaError('could not read method header "' + m.header + '"');
+        m.name = hm[1]; m.params = parseParams(hm[2]);
+        if (m.name !== className) ctxInfo.methods.push(m.name);
+      }
+    });
+    ctxInfo.methods = ctxInfo.methods.filter(function (n) { return ['runOpMode'].indexOf(n) < 0; });
+
+    let fieldsJs = '', methodsJs = '', initJs = '';
+    members.forEach(function (m) {
+      if (m.kind === 'field') {
+        const t = m.text.replace(/\b(public|private|protected|static|final|volatile|transient)\s+/g, '');
+        const js = translateBody(t + ';', ctxInfo);
+        if (!/^\s*let\s/.test(js)) throw new JavaError('could not read field "' + m.text.slice(0, 60) + '"');
+        fieldsJs += js + '\n';
+      } else if (m.kind === 'method') {
+        if (m.name === className) return;    // constructors are ignored
+        methodsJs += 'async function ' + m.name + '(' + m.params + ') {' + translateBody(m.inner, ctxInfo) + '}\n';
+      } else if (m.kind === 'init') {
+        initJs += '{' + translateBody(m.inner, ctxInfo) + '}\n';
+      }
+    });
+
+    const lifecycle = ['runOpMode', 'init', 'init_loop', 'start', 'loop', 'stop'];
+    let js = enumsJs + fieldsJs + initJs + methodsJs +
+      'return {' + lifecycle.map(function (n) { return n + ': (typeof ' + n + " === 'function' ? " + n + ' : null)'; }).join(', ') + '};';
+    js = unmaskStrings(js, ms.strings);
+    return { js: js, className: className, superName: superName };
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  //  8. OPMODE RUNTIME (Driver Station: INIT / START / STOP)
+  // ═════════════════════════════════════════════════════════════
+  const pageStart = performance.now();
+  const BUTTONS = ['a', 'b', 'x', 'y', 'dpad_up', 'dpad_down', 'dpad_left', 'dpad_right', 'left_bumper', 'right_bumper', 'start', 'back', 'guide', 'left_stick_button', 'right_stick_button'];
+  function camel(n) { return n.replace(/_(\w)/g, function (_, c) { return c.toUpperCase(); }); }
+  function makeGamepad() {
+    const g = { left_stick_x: 0, left_stick_y: 0, right_stick_x: 0, right_stick_y: 0, left_trigger: 0, right_trigger: 0, _pressed: {}, _released: {} };
+    BUTTONS.forEach(function (b) {
+      g[b] = false;
+      g[camel(b) + 'WasPressed'] = function () { const v = !!g._pressed[b]; g._pressed[b] = false; return v; };
+      g[camel(b) + 'WasReleased'] = function () { const v = !!g._released[b]; g._released[b] = false; return v; };
+    });
+    g.atRest = function () { return !g.left_trigger && !g.right_trigger; };
+    return g;
+  }
+  const gamepad1 = makeGamepad();
+  const gamepad2 = makeGamepad();
+  function setButton(b, down) {
+    if (gamepad1[b] === down) return;
+    gamepad1[b] = down;
+    if (down) gamepad1._pressed[b] = true; else gamepad1._released[b] = true;
+    document.querySelectorAll('.prism-pad__btn[data-btn="' + b + '"]').forEach(function (el) { el.classList.toggle('is-down', down); });
+  }
+
+  let session = null;
+  let warnedI2c = false;
+
+  function addOutput(text, cls) {
+    const el = document.getElementById('console-output');
+    const d = document.createElement('div');
+    if (cls) d.className = 'tot-console__line--' + cls;
+    d.textContent = text;
+    el.appendChild(d);
+    while (el.childNodes.length > 300) el.removeChild(el.firstChild);
+    el.scrollTop = el.scrollHeight;
+  }
+  function clearOutput() { document.getElementById('console-output').innerHTML = ''; }
+
+  function friendlyError(err) {
+    let msg = err && err.message ? err.message : String(err);
+    let m;
+    if ((m = /^(?:[\w$]+\.)*([\w$]+) is not a function/.exec(msg))) msg = 'there is no method "' + m[1] + '(...)" there — check the spelling and the reference below';
+    else if ((m = /^([\w$]+) is not defined/.exec(msg))) msg = 'cannot find symbol "' + m[1] + '" — is it spelled right, and declared before you use it?';
+    else if ((m = /Cannot read properties of (null|undefined) \(reading '([^']+)'\)/.exec(msg))) msg = 'NullPointerException — something was null when you used .' + m[2] + ' (did you forget to set it, e.g. prism = hardwareMap.get(...)?)';
+    else if ((m = /Cannot set properties of (null|undefined)/.exec(msg))) msg = 'NullPointerException — tried to set a field on something that is null';
+    else if (err instanceof SyntaxError) msg = 'syntax error (' + msg + '). The simulator understands a subset of Java — check for typos, missing semicolons or braces.';
+    else if (/is not a constructor/.test(msg)) msg = msg.replace(/^.*?([\w$.]+) is not a constructor.*$/, 'cannot create "new $1(...)" — is the class name right?');
+    return msg;
+  }
+
+  function makeTelemetry(sess) {
+    let lines = [];
+    function render() {
+      if (sess !== session) return;
+      const el = document.getElementById('ds-telemetry');
+      if (!lines.length) { el.innerHTML = '<span class="prism-telemetry__empty">No telemetry yet.</span>'; return; }
+      el.textContent = lines.join('\n');
+    }
+    const t = {
+      addData: function (caption, value) {
+        const rest = Array.prototype.slice.call(arguments, 2);
+        const v = rest.length ? jformat.apply(null, [value].concat(rest)) : jstr(value);
+        lines.push(jstr(caption) + ' : ' + v);
+        return t;
+      },
+      addLine: function (s) { lines.push(s === undefined ? '' : jstr(s)); return t; },
+      update: function () { render(); lines = []; return true; },
+      clear: function () { lines = []; },
+      clearAll: function () { lines = []; render(); },
+      setAutoClear: function () {},
+      log: function () { return { add: function (s) { addOutput(jstr(s), 'info'); } }; },
+    };
+    return t;
+  }
+
+  class ElapsedTime {
+    constructor() { this._t0 = performance.now(); }
+    reset() { this._t0 = performance.now(); }
+    seconds() { return (performance.now() - this._t0) / 1000; }
+    milliseconds() { return performance.now() - this._t0; }
+    time(unit) { const ms = performance.now() - this._t0; return unit && unit._ms ? ms / unit._ms : ms / 1000; }
+    startTime() { return this._t0 / 1000; }
+    toString() { return this.seconds().toFixed(3) + ' seconds'; }
+  }
+
+  function setStatus(state) {
+    const el = document.getElementById('ds-status');
+    const labels = { idle: 'Stopped', init: 'Init', running: 'Running', error: 'Error' };
+    el.textContent = labels[state];
+    el.className = 'prism-status' + (state === 'idle' ? '' : ' prism-status--' + state);
+    const m = document.getElementById('m-state');
+    m.textContent = labels[state];
+    m.className = 'tot-metric-value' + (state === 'running' ? ' tot-metric-value--running' : state === 'error' ? ' tot-metric-value--bad' : '');
+    document.getElementById('init-btn').disabled = state === 'init' || state === 'running';
+    document.getElementById('start-btn').disabled = state !== 'init';
+    document.getElementById('stop-btn').disabled = !(state === 'init' || state === 'running');
+  }
+
+  function buildApi(sess) {
+    const telemetry = makeTelemetry(sess);
+    sess.telemetry = telemetry;
+    let lastYield = performance.now();
+    function checkKill() { if (sess.killed || sess !== session) throw new OpModeKilled('stopped'); }
+    function waitMs(ms) {
+      return new Promise(function (resolve) {
+        const id = setTimeout(done, Math.max(0, ms));
+        function done() { clearTimeout(id); const k = sess.waiters.indexOf(done); if (k >= 0) sess.waiters.splice(k, 1); resolve(); }
+        sess.waiters.push(done);
+      });
+    }
+    const hardwareMap = {
+      get: function (cls, name) {
+        if (typeof cls === 'string') { name = cls; cls = GoBildaPrismDriver; }
+        const want = document.getElementById('config-name').value.trim();
+        if (cls !== GoBildaPrismDriver) throw new JavaError('this simulator only has a GoBildaPrismDriver in its robot configuration');
+        if (name !== want) throw new JavaError('Unable to find a hardware device with name "' + name + '" and type GoBildaPrismDriver (the configuration calls it "' + want + '")');
+        if (!sess.driver) sess.driver = new GoBildaPrismDriver();
+        return sess.driver;
+      },
+    };
+    hardwareMap.tryGet = function (cls, name) { try { return hardwareMap.get(cls, name); } catch (e) { return null; } };
+    return {
+      Color: Color, Direction: Direction, GoBildaPrismDriver: GoBildaPrismDriver, PrismAnimations: PrismAnimations,
+      LayerHeight: LayerHeight, Artboard: Artboard, AnimationType: AnimationType,
+      DroidScanStyle: DroidScanStyle, SingleFillStyle: SingleFillStyle, PoliceLightsStyle: PoliceLightsStyle,
+      Solid: Solid, Blink: Blink, Pulse: Pulse, SineWave: SineWave, DroidScan: DroidScan, Rainbow: Rainbow, RainbowSnakes: RainbowSnakes,
+      Random: RandomAnim, Sparkle: Sparkle, SingleFill: SingleFill, Snakes: Snakes, PoliceLights: PoliceLights,
+      TimeUnit: TimeUnit, ElapsedTime: ElapsedTime, String: JString, Math: JMath, Integer: Integer, Double: JDouble,
+      hardwareMap: hardwareMap, telemetry: telemetry, gamepad1: gamepad1, gamepad2: gamepad2,
+      sleep: async function (ms) { checkKill(); if (sess.stopRequested) return; await waitMs(toInt(ms)); lastYield = performance.now(); checkKill(); },
+      idle: async function () { checkKill(); await waitMs(0); lastYield = performance.now(); },
+      waitForStart: async function () {
+        checkKill();
+        if (!sess.started && !sess.stopRequested) await new Promise(function (r) { sess.startWaiters.push(r); });
+        checkKill();
+      },
+      opModeIsActive: function () { return sess.started && !sess.stopRequested; },
+      opModeInInit: function () { return !sess.started && !sess.stopRequested; },
+      isStarted: function () { return sess.started; },
+      isStopRequested: function () { return sess.stopRequested; },
+      requestOpModeStop: function () { requestStop(); },
+      terminateOpModeNow: function () { requestStop(); throw new OpModeKilled('terminated'); },
+      getRuntime: function () { return (performance.now() - sess.t0) / 1000; },
+      resetRuntime: function () { sess.t0 = performance.now(); },
+      __tick: async function () {
+        checkKill();
+        if (performance.now() - lastYield > 12) { await waitMs(0); lastYield = performance.now(); checkKill(); }
+      },
+      __toInt: function (v) { return toInt(v); },
+      __newArray: function (n, def) { return new Array(toInt(n)).fill(def); },
+      __println: function (v) { addOutput(arguments.length ? jstr(v) : '', null); },
+      __rethrowKill: function (e) { if (e instanceof OpModeKilled) throw e; },
+      __makeEnum: makeEnum,
+    };
+  }
+
+  function finishSession(sess, err) {
+    if (sess !== session || sess.finished) return;
+    sess.finished = true;
+    clearInterval(sess.loopTimer);
+    if (err && !(err instanceof OpModeKilled)) {
+      addOutput('✗ ' + (err instanceof JavaError ? err.message : friendlyError(err)), 'error');
+      setStatus('error');
+    } else {
+      if (err instanceof OpModeKilled && sess.killed && !sess.cleanStop) addOutput('■ OpMode force-stopped (it didn\'t end within 1.5 s of STOP).', 'warn');
+      else addOutput('■ OpMode stopped. The Prism keeps running its last animations.', 'muted');
+      setStatus('idle');
+    }
+  }
+
+  async function doInit() {
+    if (session && !session.finished) return;
+    const src = document.getElementById('code-editor').value;
+    let compiled, factory;
+    clearOutput();
+    try {
+      compiled = compileJava(src);
+    } catch (e) {
+      addOutput('✗ compile error: ' + (e instanceof JavaError ? e.message : friendlyError(e)), 'error');
+      setStatus('error');
+      return;
+    }
+    const sess = { started: false, stopRequested: false, killed: false, finished: false, waiters: [], startWaiters: [], t0: performance.now(), driver: null };
+    const api = buildApi(sess);
+    const names = Object.keys(api);
+    try {
+      factory = new Function(names.join(','), '"use strict"; return (async function () {\n' + compiled.js + '\n});');
+    } catch (e) {
+      addOutput('✗ compile error: ' + friendlyError(e), 'error');
+      setStatus('error');
+      return;
+    }
+    session = sess;
+    warnedI2c = false;
+    document.getElementById('ds-telemetry').innerHTML = '<span class="prism-telemetry__empty">No telemetry yet.</span>';
+    setStatus('init');
+    addOutput('▸ INIT ' + compiled.className + (compiled.superName ? ' (' + compiled.superName + ')' : ''), 'ok');
+    try {
+      const make = factory.apply(null, names.map(function (n) { return api[n]; }));
+      const op = await make();
+      sess.op = op;
+      if (op.runOpMode) {
+        op.runOpMode().then(function () { finishSession(sess, null); }, function (e) { finishSession(sess, e); });
+      } else if (op.loop || op.init) {
+        if (op.init) await op.init();
+        sess.telemetry.update();
+        runIterative(sess, 'init_loop');
+      } else {
+        throw new JavaError('no runOpMode() (LinearOpMode) or init()/loop() (OpMode) method found');
+      }
+    } catch (e) {
+      finishSession(sess, e);
+    }
+  }
+
+  // Iterative OpMode: call init_loop()/loop() every 20 ms, like the SDK's event loop.
+  function runIterative(sess, which) {
+    clearInterval(sess.loopTimer);
+    let busy = false;
+    sess.loopTimer = setInterval(async function () {
+      if (busy || sess.finished || sess.stopRequested) return;
+      const fn = sess.op[which];
+      if (!fn) return;
+      busy = true;
+      try { await fn(); sess.telemetry.update(); }
+      catch (e) { finishSession(sess, e); }
+      busy = false;
+    }, 20);
+  }
+
+  async function doStart() {
+    const sess = session;
+    if (!sess || sess.finished || sess.started) return;
+    sess.started = true;
+    sess.t0 = performance.now();
+    setStatus('running');
+    addOutput('▸ START', 'ok');
+    sess.startWaiters.splice(0).forEach(function (r) { r(); });
+    if (sess.op && !sess.op.runOpMode) {
+      try { if (sess.op.start) await sess.op.start(); runIterative(sess, 'loop'); }
+      catch (e) { finishSession(sess, e); }
+    }
+  }
+
+  async function requestStop() {
+    const sess = session;
+    if (!sess || sess.finished || sess.stopRequested) return;
+    sess.stopRequested = true;
+    sess.startWaiters.splice(0).forEach(function (r) { r(); });
+    sess.waiters.slice().forEach(function (w) { w(); });
+    addOutput('▸ STOP', 'muted');
+    if (sess.op && !sess.op.runOpMode) {
+      clearInterval(sess.loopTimer);
+      try { if (sess.op.stop) await sess.op.stop(); finishSession(sess, null); }
+      catch (e) { finishSession(sess, e); }
+      return;
+    }
+    setTimeout(function () {
+      if (!sess.finished) { sess.killed = true; sess.waiters.slice().forEach(function (w) { w(); }); }
+    }, 1500);
+  }
+
+  // ═════════════════════════════════════════════════════════════
+  //  9. EXAMPLE OPMODES
+  // ═════════════════════════════════════════════════════════════
+  const IMPORTS =
+`package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import org.firstinspires.ftc.teamcode.Prism.Color;
+import org.firstinspires.ftc.teamcode.Prism.Direction;
+import org.firstinspires.ftc.teamcode.Prism.GoBildaPrismDriver;
+import org.firstinspires.ftc.teamcode.Prism.GoBildaPrismDriver.LayerHeight;
+import org.firstinspires.ftc.teamcode.Prism.PrismAnimations;
+`;
+
+  const EXAMPLES = [
+    { id: 'solid', label: '1 · Solid Color', file: 'LedSolid.java', code: IMPORTS + `
+@TeleOp(name = "LED 1: Solid Color")
+public class LedSolid extends LinearOpMode {
+
+    GoBildaPrismDriver prism;
+
+    @Override
+    public void runOpMode() {
+        // "prism" must match the device name in the robot configuration.
+        prism = hardwareMap.get(GoBildaPrismDriver.class, "prism");
+
+        // Our rectangle is 12 + 6 + 12 + 6 = 36 LEDs on one chain.
+        prism.setStripLength(36);
+
+        // Layers stay on the Prism between OpModes, so start clean.
+        prism.clearAllAnimations();
+
+        // One Solid animation covering every LED, on the bottom layer.
+        PrismAnimations.Solid solid = new PrismAnimations.Solid(Color.BLUE);
+        solid.setBrightness(60);      // 0 - 100 percent
+        solid.setStartIndex(0);       // first LED (top-left)
+        solid.setStopIndex(35);       // last LED, inclusive
+
+        // insertAndUpdate = store it in LAYER_0 AND send it over I2C.
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, solid);
+
+        telemetry.addData("LEDs", prism.getNumberOfLEDs());
+        telemetry.addLine("Try: Color.ORANGE, new Color(255, 80, 0), brightness 20");
+        telemetry.update();
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+            telemetry.addData("Runtime", "%.1f s", getRuntime());
+            telemetry.update();
+            sleep(100);
+        }
+    }
+}
+` },
+    { id: 'strips', label: '2 · Four Strips', file: 'LedFourStrips.java', code: IMPORTS + `
+@TeleOp(name = "LED 2: Four Strips")
+public class LedFourStrips extends LinearOpMode {
+
+    // Our wiring: clockwise from the top strip.
+    static final int TOP_START = 0,     TOP_END = 11;
+    static final int RIGHT_START = 12,  RIGHT_END = 17;
+    static final int BOTTOM_START = 18, BOTTOM_END = 29;
+    static final int LEFT_START = 30,   LEFT_END = 35;
+
+    GoBildaPrismDriver prism;
+
+    @Override
+    public void runOpMode() {
+        prism = hardwareMap.get(GoBildaPrismDriver.class, "prism");
+        prism.setStripLength(36);
+        prism.clearAllAnimations();
+
+        // A layer holds ONE animation, so each strip gets its own layer.
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, segment(Color.RED,    TOP_START,    TOP_END));
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_1, segment(Color.GREEN,  RIGHT_START,  RIGHT_END));
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_2, segment(Color.BLUE,   BOTTOM_START, BOTTOM_END));
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_3, segment(Color.YELLOW, LEFT_START,   LEFT_END));
+
+        // Challenge: put white LEDs on the four corners using LAYER_4..LAYER_7.
+        // (Corners: 0 and 11, 12 and 17, 18 and 29, 30 and 35.)
+
+        telemetry.addLine("Each strip is its own Solid animation on its own layer.");
+        telemetry.update();
+        waitForStart();
+
+        while (opModeIsActive()) {
+            sleep(50);
+        }
+    }
+
+    // Helper: a Solid color over an inclusive index range.
+    // (PrismAnimations.Solid also has a constructor that does this: new Solid(color, start, stop).)
+    PrismAnimations.Solid segment(Color color, int start, int stop) {
+        PrismAnimations.Solid s = new PrismAnimations.Solid(color);
+        s.setStartIndex(start);
+        s.setStopIndex(stop);
+        return s;
+    }
+}
+` },
+    { id: 'layers', label: '3 · Layers', file: 'LedLayers.java', code: IMPORTS + `
+@TeleOp(name = "LED 3: Layers")
+public class LedLayers extends LinearOpMode {
+
+    GoBildaPrismDriver prism;
+
+    @Override
+    public void runOpMode() {
+        prism = hardwareMap.get(GoBildaPrismDriver.class, "prism");
+        prism.setStripLength(36);
+        prism.clearAllAnimations();
+
+        // LAYER_0 (bottom): a slow rainbow around the whole rectangle.
+        PrismAnimations.Rainbow rainbow = new PrismAnimations.Rainbow();
+        rainbow.setSpeed(0.3f);
+        rainbow.setRepeatAfter(36);          // one full rainbow per lap
+        rainbow.setBrightness(40);
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, rainbow);
+
+        // LAYER_1: white sparkles. Its secondary color is TRANSPARENT (black),
+        // so wherever it isn't sparkling you see the rainbow underneath.
+        PrismAnimations.Sparkle sparkle = new PrismAnimations.Sparkle(Color.WHITE);
+        sparkle.setSparkleProbability(20);
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_1, sparkle);
+
+        // LAYER_2 (top): a red scanner on the top strip only (indexes 0-11).
+        PrismAnimations.DroidScan scanner = new PrismAnimations.DroidScan(Color.RED);
+        scanner.setStartIndex(0);
+        scanner.setStopIndex(11);
+        scanner.setEyeWidth(2);
+        scanner.setTrailWidth(3);
+        scanner.setSpeed(0.5f);
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_2, scanner);
+
+        telemetry.addLine("Hold A to hide the scanner layer.");
+        telemetry.update();
+        waitForStart();
+
+        boolean scannerOn = true;
+        while (opModeIsActive()) {
+            boolean wantScanner = !gamepad1.a;
+
+            // Change the animation we already inserted, then re-send just that layer.
+            if (wantScanner != scannerOn) {
+                scanner.setBrightness(wantScanner ? 100 : 0);
+                prism.updateAnimationFromIndex(LayerHeight.LAYER_2);
+                scannerOn = wantScanner;
+            }
+
+            telemetry.addData("Scanner", scannerOn ? "on" : "hidden");
+            telemetry.update();
+            sleep(20);
+        }
+    }
+}
+` },
+    { id: 'states', label: '4 · Gamepad States', file: 'LedRobotStates.java', code: IMPORTS + `
+@TeleOp(name = "LED 4: Robot States")
+public class LedRobotStates extends LinearOpMode {
+
+    enum LedState { IDLE, INTAKING, READY, ALERT }
+
+    GoBildaPrismDriver prism;
+    LedState current = null;
+
+    @Override
+    public void runOpMode() {
+        prism = hardwareMap.get(GoBildaPrismDriver.class, "prism");
+        prism.setStripLength(36);
+        prism.clearAllAnimations();
+
+        telemetry.addLine("RT = intaking, A = ready, B = alert");
+        telemetry.update();
+        waitForStart();
+
+        while (opModeIsActive()) {
+            // 1. Decide what the robot is doing.
+            LedState wanted;
+            if (gamepad1.b) {
+                wanted = LedState.ALERT;
+            } else if (gamepad1.a) {
+                wanted = LedState.READY;
+            } else if (gamepad1.right_trigger > 0.1) {
+                wanted = LedState.INTAKING;
+            } else {
+                wanted = LedState.IDLE;
+            }
+
+            // 2. Only talk to the Prism when the state CHANGES.
+            //    (Try calling showState() every loop and watch the I2C meter.)
+            if (wanted != current) {
+                showState(wanted);
+                current = wanted;
+            }
+
+            telemetry.addData("State", current);
+            telemetry.update();
+            sleep(20);
+        }
+    }
+
+    void showState(LedState state) {
+        switch (state) {
+            case IDLE:
+                // Slow blue "breathing": fade between blue and off over 2 s.
+                prism.insertAndUpdateAnimation(LayerHeight.LAYER_0,
+                        new PrismAnimations.Pulse(Color.BLUE, Color.TRANSPARENT, 2000));
+                break;
+            case INTAKING:
+                // Orange snakes running clockwise.
+                PrismAnimations.Snakes snakes = new PrismAnimations.Snakes(4, 3, 14, Color.TRANSPARENT, 0.8f,
+                        Direction.Forward, Color.ORANGE, Color.YELLOW);
+                prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, snakes);
+                break;
+            case READY:
+                prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, new PrismAnimations.Solid(Color.GREEN));
+                break;
+            case ALERT:
+                // Fast red blink: 400 ms period, red for the first 200 ms.
+                prism.insertAndUpdateAnimation(LayerHeight.LAYER_0,
+                        new PrismAnimations.Blink(Color.RED, Color.TRANSPARENT, 400, 200));
+                break;
+        }
+    }
+}
+` },
+    { id: 'gauge', label: '5 · Trigger Bar', file: 'LedTriggerBar.java', code: IMPORTS + `
+@TeleOp(name = "LED 5: Trigger Bar")
+public class LedTriggerBar extends LinearOpMode {
+
+    GoBildaPrismDriver prism;
+
+    @Override
+    public void runOpMode() {
+        prism = hardwareMap.get(GoBildaPrismDriver.class, "prism");
+        prism.setStripLength(36);
+        prism.clearAllAnimations();
+
+        // Background: everything dim white, so the "empty" gauge is visible.
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, new PrismAnimations.Solid(Color.WHITE, 15));
+
+        // The bar: one Solid on the top strip whose stop index we move.
+        PrismAnimations.Solid bar = new PrismAnimations.Solid(Color.GREEN, 0, 0);
+        bar.setBrightness(0);
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_1, bar);
+
+        telemetry.addLine("Drag the RT slider on the gamepad.");
+        telemetry.update();
+        waitForStart();
+
+        int lastLit = -1;
+        while (opModeIsActive()) {
+            // 0.0 - 1.0 trigger  ->  0 - 12 LEDs on the top strip
+            int lit = (int) Math.round(gamepad1.right_trigger * 12);
+
+            if (lit != lastLit) {
+                Color c = Color.GREEN;
+                if (lit >= 10) {
+                    c = Color.RED;
+                } else if (lit >= 6) {
+                    c = Color.YELLOW;
+                }
+                bar.setPrimaryColor(c);
+                bar.setBrightness(lit == 0 ? 0 : 100);   // 0 LEDs = hide the layer
+                bar.setStopIndex(Math.max(lit - 1, 0));   // inclusive index
+                prism.updateAnimationFromIndex(LayerHeight.LAYER_1);
+                lastLit = lit;
+            }
+
+            telemetry.addData("Trigger", "%.2f", gamepad1.right_trigger);
+            telemetry.addData("LEDs lit", lit);
+            telemetry.update();
+            sleep(20);
+        }
+    }
+}
+` },
+    { id: 'timer', label: '6 · Match Timer', file: 'LedMatchTimer.java', code: IMPORTS + `import com.qualcomm.robotcore.util.ElapsedTime;
+
+@TeleOp(name = "LED 6: Match Timer")
+public class LedMatchTimer extends LinearOpMode {
+
+    // A real TeleOp period is 120 s. Shortened so you can watch it all.
+    static final double MATCH_SECONDS = 30.0;
+
+    GoBildaPrismDriver prism;
+    ElapsedTime matchTimer = new ElapsedTime();
+    int phase = -1;
+
+    @Override
+    public void runOpMode() {
+        prism = hardwareMap.get(GoBildaPrismDriver.class, "prism");
+        prism.setStripLength(36);
+        prism.clearAllAnimations();
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, new PrismAnimations.Solid(Color.WHITE, 20));
+
+        waitForStart();
+        matchTimer.reset();
+
+        while (opModeIsActive()) {
+            double left = MATCH_SECONDS - matchTimer.seconds();
+
+            int newPhase;
+            if (left > 15)      newPhase = 0;   // plenty of time
+            else if (left > 5)  newPhase = 1;   // endgame is coming
+            else if (left > 0)  newPhase = 2;   // park NOW
+            else                newPhase = 3;   // match over
+
+            if (newPhase != phase) {
+                phase = newPhase;
+                if (phase == 0) {
+                    prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, new PrismAnimations.Solid(Color.BLUE));
+                } else if (phase == 1) {
+                    prism.insertAndUpdateAnimation(LayerHeight.LAYER_0,
+                            new PrismAnimations.Pulse(Color.YELLOW, Color.ORANGE, 800));
+                } else if (phase == 2) {
+                    prism.insertAndUpdateAnimation(LayerHeight.LAYER_0,
+                            new PrismAnimations.Blink(Color.RED, Color.TRANSPARENT, 250, 125));
+                } else {
+                    PrismAnimations.RainbowSnakes party = new PrismAnimations.RainbowSnakes();
+                    party.setNumberOfSnakes(4);
+                    party.setSpeed(0.9f);
+                    prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, party);
+                }
+            }
+
+            telemetry.addData("Time left", "%.1f s", Math.max(left, 0));
+            telemetry.addData("Phase", phase);
+            telemetry.update();
+            sleep(50);
+        }
+    }
+}
+` },
+    { id: 'artboards', label: '7 · Artboards', file: 'LedArtboards.java', code: IMPORTS + `import org.firstinspires.ftc.teamcode.Prism.GoBildaPrismDriver.Artboard;
+
+@TeleOp(name = "LED 7: Artboards")
+public class LedArtboards extends LinearOpMode {
+
+    GoBildaPrismDriver prism;
+
+    @Override
+    public void runOpMode() {
+        prism = hardwareMap.get(GoBildaPrismDriver.class, "prism");
+        prism.setStripLength(36);
+
+        // --- Build look #1 and save it to ARTBOARD_1 ---
+        prism.clearAllAnimations();
+        PrismAnimations.Rainbow rainbow = new PrismAnimations.Rainbow();
+        rainbow.setBrightness(35);
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, rainbow);
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_1,
+                new PrismAnimations.DroidScan(Color.WHITE));
+        prism.saveCurrentAnimationsToArtboard(Artboard.ARTBOARD_1);
+
+        // --- Build look #2 and save it to ARTBOARD_2 ---
+        prism.clearAllAnimations();
+        PrismAnimations.PoliceLights police = new PrismAnimations.PoliceLights();
+        police.setPeriod(600);
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, police);
+        prism.saveCurrentAnimationsToArtboard(Artboard.ARTBOARD_2);
+
+        // Show look #1 whenever the Prism powers on (no code needed!).
+        prism.setDefaultBootArtboard(Artboard.ARTBOARD_1);
+        prism.enableDefaultBootArtboard(true);
+
+        // Artboards are saved in the Prism's memory: save once, not every loop.
+        prism.loadAnimationsFromArtboard(Artboard.ARTBOARD_1);
+
+        telemetry.addLine("X = look 1, Y = look 2.");
+        telemetry.addLine("Then STOP and press 'Power-cycle Prism'.");
+        telemetry.update();
+        waitForStart();
+
+        while (opModeIsActive()) {
+            // One I2C write swaps every layer at once.
+            if (gamepad1.xWasPressed()) prism.loadAnimationsFromArtboard(Artboard.ARTBOARD_1);
+            if (gamepad1.yWasPressed()) prism.loadAnimationsFromArtboard(Artboard.ARTBOARD_2);
+            sleep(20);
+        }
+    }
+}
+` },
+    { id: 'iterative', label: '8 · Iterative OpMode', file: 'LedIterative.java', code:
+`package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import org.firstinspires.ftc.teamcode.Prism.Color;
+import org.firstinspires.ftc.teamcode.Prism.Direction;
+import org.firstinspires.ftc.teamcode.Prism.GoBildaPrismDriver;
+import org.firstinspires.ftc.teamcode.Prism.GoBildaPrismDriver.LayerHeight;
+import org.firstinspires.ftc.teamcode.Prism.PrismAnimations;
+
+// The same ideas as an iterative OpMode: the SDK calls init() once,
+// init_loop() over and over until START, then loop() over and over.
+@TeleOp(name = "LED 8: Iterative")
+public class LedIterative extends OpMode {
+
+    GoBildaPrismDriver prism;
+    PrismAnimations.Snakes chase;
+    boolean clockwise = true;
+
+    @Override
+    public void init() {
+        prism = hardwareMap.get(GoBildaPrismDriver.class, "prism");
+        prism.setStripLength(36);
+        prism.clearAllAnimations();
+
+        chase = new PrismAnimations.Snakes(Color.CYAN);   // one cyan snake
+        chase.setSnakeLength(6);
+        chase.setRepeatAfter(36);                          // one snake per lap
+        chase.setSpeed(0.6f);
+        chase.setDirection(Direction.Forward);             // Forward = clockwise for us
+        prism.insertAndUpdateAnimation(LayerHeight.LAYER_0, chase);
+    }
+
+    @Override
+    public void init_loop() {
+        telemetry.addLine("Ready. D-pad left/right reverses the chase.");
+    }
+
+    @Override
+    public void loop() {
+        if (gamepad1.dpadLeftWasPressed() || gamepad1.dpadRightWasPressed()) {
+            clockwise = !clockwise;
+            chase.setDirection(clockwise ? Direction.Forward : Direction.Backward);
+            prism.updateAnimationFromIndex(LayerHeight.LAYER_0);
+        }
+        telemetry.addData("Direction", clockwise ? "clockwise" : "counter-clockwise");
+    }
+
+    @Override
+    public void stop() {
+        // Optional: blank the LEDs when the OpMode ends.
+        prism.clearAllAnimations();
+    }
+}
+` },
+  ];
+
+  // ═════════════════════════════════════════════════════════════
+  //  10. UI WIRING
+  // ═════════════════════════════════════════════════════════════
+  const editor = document.getElementById('code-editor');
+  const toolbar = document.getElementById('example-toolbar');
+  function classNameOf(src) { const m = /\bclass\s+([\w$]+)/.exec(src); return m ? m[1] + '.java' : 'LedOpMode.java'; }
+  function refreshTitle() { document.getElementById('file-title').textContent = classNameOf(editor.value); }
+
+  EXAMPLES.forEach(function (ex) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tot-btn tot-btn--sm tot-btn--secondary';
+    b.textContent = ex.label;
+    b.addEventListener('click', function () {
+      if (session && !session.finished) requestStop();
+      editor.value = ex.code;
+      editor.dispatchEvent(new Event('input'));
+      refreshTitle();
+      addOutput('// Loaded "' + ex.label + '". Press INIT, then START.', 'info');
+    });
+    toolbar.appendChild(b);
+  });
+
+  editor.value = EXAMPLES[0].code;
+  TotModuleStorage.attach({
+    key: 'prism-led-driver',
+    textarea: editor,
+    onRestore: function () { addOutput('// Restored your saved code.', 'info'); },
+  });
+  refreshTitle();
+  editor.addEventListener('input', refreshTitle);
+  editor.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = editor.selectionStart, en = editor.selectionEnd;
+      editor.value = editor.value.slice(0, s) + '    ' + editor.value.slice(en);
+      editor.selectionStart = editor.selectionEnd = s + 4;
+      editor.dispatchEvent(new Event('input'));
+    }
+  });
+
+  document.getElementById('init-btn').addEventListener('click', doInit);
+  document.getElementById('start-btn').addEventListener('click', doStart);
+  document.getElementById('stop-btn').addEventListener('click', requestStop);
+  document.getElementById('power-btn').addEventListener('click', function () {
+    powerCycle();
+    addOutput('// Prism power-cycled: layers cleared' + (device.bootEnabled && device.artboards[device.bootArtboard] ? ', boot artboard ' + device.bootArtboard + ' loaded.' : '. (No boot artboard enabled.)'), 'info');
+  });
+  document.getElementById('show-index').addEventListener('change', function (e) { showIndexes = e.target.checked; });
+
+  // Gamepad: pointer hold + keyboard
+  document.querySelectorAll('.prism-pad__btn').forEach(function (el) {
+    const b = el.getAttribute('data-btn');
+    el.addEventListener('pointerdown', function (e) { e.preventDefault(); el.setPointerCapture(e.pointerId); setButton(b, true); });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { el.addEventListener(ev, function () { setButton(b, false); }); });
+  });
+  const KEYMAP = { a: 'a', b: 'b', x: 'x', y: 'y', ArrowUp: 'dpad_up', ArrowDown: 'dpad_down', ArrowLeft: 'dpad_left', ArrowRight: 'dpad_right', q: 'left_bumper', e: 'right_bumper' };
+  function keyTarget(e) {
+    const t = e.target;
+    if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.isContentEditable)) return null;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    return KEYMAP[k] || null;
+  }
+  window.addEventListener('keydown', function (e) { const b = keyTarget(e); if (b) { if (b.indexOf('dpad') === 0) e.preventDefault(); setButton(b, true); } });
+  window.addEventListener('keyup', function (e) { const b = keyTarget(e); if (b) setButton(b, false); });
+  window.addEventListener('blur', function () { BUTTONS.forEach(function (b) { setButton(b, false); }); });
+  [['lt-slider', 'lt-val', 'left_trigger'], ['rt-slider', 'rt-val', 'right_trigger']].forEach(function (t) {
+    const s = document.getElementById(t[0]), v = document.getElementById(t[1]);
+    s.addEventListener('input', function () { gamepad1[t[2]] = +s.value; v.textContent = (+s.value).toFixed(2); });
+  });
+
+  // Layer + artboard inspector
+  let layersDirty = true;
+  function cssColor(c) { return c ? 'rgb(' + c.join(',') + ')' : 'transparent'; }
+  const PRETTY = { SOLID: 'Solid', BLINK: 'Blink', PULSE: 'Pulse', SINE_WAVE: 'SineWave', DROID_SCAN: 'DroidScan', RAINBOW: 'Rainbow', SNAKES: 'Snakes', RANDOM: 'Random', SPARKLE: 'Sparkle', SINGLE_FILL: 'SingleFill', RAINBOW_SNAKES: 'RainbowSnakes', POLICE_LIGHTS: 'PoliceLights' };
+  function renderInspector() {
+    const list = document.getElementById('layer-list');
+    list.innerHTML = '';
+    for (let L = 9; L >= 0; L--) {
+      const layer = device.layers[L];
+      const row = document.createElement('div');
+      row.className = 'prism-layer' + (layer ? '' : ' is-empty');
+      const sw = document.createElement('span');
+      sw.className = 'prism-layer__sw';
+      const txt = document.createElement('span');
+      txt.className = 'prism-layer__txt';
+      if (layer) {
+        const s = layer.snap;
+        const c = s.primaryColor || (s.colors && s.colors[0]) || s.red;
+        sw.style.background = c ? cssColor(c) : 'linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f)';
+        const hi = Math.min(s.stopIndex, device.stripLength - 1);
+        txt.innerHTML = '<b>L' + L + '</b> ' + PRETTY[s.type] + ' · ' + s.startIndex + '–' + (hi < s.startIndex ? '∅' : hi) + ' · ' + s.brightness + '%';
+      } else {
+        sw.style.background = 'transparent';
+        txt.innerHTML = '<b>L' + L + '</b> empty';
+      }
+      row.appendChild(sw); row.appendChild(txt);
+      list.appendChild(row);
+    }
+    const ab = document.getElementById('artboard-list');
+    ab.innerHTML = '';
+    device.artboards.forEach(function (a, i) {
+      const el = document.createElement('span');
+      const isBoot = device.bootEnabled && device.bootArtboard === i;
+      el.className = 'prism-artboard' + (a ? ' is-saved' : '') + (isBoot ? ' is-boot' : '');
+      el.textContent = 'A' + i + (a ? ' · ' + a.filter(Boolean).length + 'L' : '') + (isBoot ? ' · boot' : '');
+      el.title = a ? 'ARTBOARD_' + i + ': ' + a.filter(Boolean).map(function (s) { return PRETTY[s.type]; }).join(', ') : 'ARTBOARD_' + i + ': empty';
+      ab.appendChild(el);
+    });
+    document.getElementById('m-len').textContent = device.stripLength;
+    document.getElementById('hdr-leds').textContent = device.stripLength + ' / 36 LEDs';
+    document.getElementById('m-layers').textContent = device.layers.filter(Boolean).length + ' / 10';
+  }
+
+  // Main animation loop
+  let fpsFrames = 0, fpsT0 = performance.now(), lastMetric = 0;
+  function frame(now) {
+    draw(now);
+    fpsFrames++;
+    if (now - fpsT0 > 1000) { device.measuredFps = fpsFrames * 1000 / (now - fpsT0); fpsFrames = 0; fpsT0 = now; }
+    if (layersDirty) { layersDirty = false; renderInspector(); }
+    if (now - lastMetric > 250) {
+      lastMetric = now;
+      const oldest = Math.floor(now / 100) - 9;
+      while (device.txnBuckets.length && device.txnBuckets[0][0] < oldest) device.txnBuckets.shift();
+      let rate = 0;
+      device.txnBuckets.forEach(function (b) { rate += b[1]; });
+      const m = document.getElementById('m-i2c');
+      m.textContent = rate;
+      m.className = 'tot-metric-value' + (rate > 100 ? ' tot-metric-value--bad' : rate > 0 ? ' tot-metric-value--running' : '');
+      document.getElementById('m-i2c-total').textContent = device.txnTotal;
+      if (rate > 100 && !warnedI2c && session && !session.finished) {
+        warnedI2c = true;
+        addOutput('⚠ ~' + rate + ' I²C transactions per second' + (rate > 2000 ? ' (a real I²C bus can\'t even go that fast — your loop would just get slow)' : '') + '. On the robot every one takes time on the I²C bus and slows your loop. Only update the Prism when something changes.', 'warn');
+      }
+      if (hoverLed >= 0) updateHint();
+    }
+    requestAnimationFrame(frame);
+  }
+  setStatus('idle');
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -79,4 +79,12 @@ window.TOT_MODULES = [
     status: 'available',
     href: 'site/modules/camera-fov-visualizer.html',
   },
+  {
+    slug: 'prism-led-driver',
+    title: 'Prism LED Driver',
+    category: 'Hardware',
+    summary: "Program a simulated goBILDA Prism with its real Java API — layered Solid, Blink, Rainbow, Snakes and more on our 36-LED rectangle (12 + 6 + 12 + 6, wired clockwise), driven by a virtual gamepad, with telemetry, artboards, and an I²C traffic meter.",
+    status: 'available',
+    href: 'site/modules/prism-led-driver.html',
+  },
 ];
