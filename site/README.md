@@ -22,8 +22,9 @@ in `data/modules.js` are built and marked `status: 'available'`:
 [`modules/mecanum-drive.html`](modules/mecanum-drive.html),
 [`modules/swerve-drive.html`](modules/swerve-drive.html),
 [`modules/pidf-control.html`](modules/pidf-control.html),
-[`modules/cellular-automata.html`](modules/cellular-automata.html), and
-[`modules/camera-fov-visualizer.html`](modules/camera-fov-visualizer.html). Use
+[`modules/cellular-automata.html`](modules/cellular-automata.html),
+[`modules/camera-fov-visualizer.html`](modules/camera-fov-visualizer.html), and
+[`modules/prism-led-driver.html`](modules/prism-led-driver.html). Use
 this README (and Inverse Kinematics as a worked example) as the guide for any
 future module.
 
@@ -33,6 +34,16 @@ sliders-and-canvas planning tool (multi-camera field-of-view placement) with no
 based like that one, skip the code panel + `TotModuleStorage.attach(...)` step
 below entirely and just build the workbench around whatever canvas/controls the
 tool needs.
+
+`prism-led-driver.html` goes further than the other modules' regex translators:
+it runs a whole student OpMode (`LinearOpMode` with `runOpMode()`, or an
+iterative `OpMode` with `init()`/`loop()`) against a JavaScript port of goBILDA's
+real `GoBildaPrismDriver` / `PrismAnimations` / `Color` API, with INIT / START /
+STOP buttons, a virtual gamepad, and telemetry. Its translator turns `sleep()`,
+`waitForStart()` and the student's own methods into `await` calls and puts a
+yield inside every loop, so `while (opModeIsActive())` loops can't freeze the
+page. It's the best starting point if a future module needs whole-OpMode
+execution against a simulated piece of FTC hardware.
 
 ## Folder structure
 
